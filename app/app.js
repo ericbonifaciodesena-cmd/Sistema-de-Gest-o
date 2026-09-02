@@ -2,7 +2,7 @@
   var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
   var DAY_NAMES = ["Seg.", "Ter.", "Qua.", "Qui.", "Sex."];
-  var state = { session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [] };
+  var state = { session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null };
 
   function fmtMoney(n) {
     var neg = n < 0;
@@ -132,15 +132,62 @@
   var vendorGrid = document.getElementById("vendor-grid");
   var comissoesHint = document.getElementById("comissoes-hint");
 
+  function vendorTotal(vendorId) {
+    return state.comissoes
+      .filter(function (c) { return c.vendedor_id === vendorId && c.situacao === "pago"; })
+      .reduce(function (sum, c) { return sum + Number(c.valor); }, 0);
+  }
+
   function renderVendors() {
+    vendorGrid.innerHTML = "";
+
+    if (state.vendorAberto) {
+      var vendor = state.vendedores.find(function (v) { return v.id === state.vendorAberto; });
+      if (!vendor) { state.vendorAberto = null; return renderVendors(); }
+      comissoesHint.innerHTML = "";
+      var backBtn = document.createElement("button");
+      backBtn.className = "btn ghost small";
+      backBtn.textContent = "← todos os vendedores";
+      backBtn.addEventListener("click", function () { state.vendorAberto = null; renderVendors(); });
+      comissoesHint.appendChild(backBtn);
+      vendorGrid.className = "vendor-detail";
+      vendorGrid.appendChild(renderVendorCard(vendor));
+      return;
+    }
+
+    vendorGrid.className = "vendor-list";
     comissoesHint.textContent = state.vendedores.length
       ? state.vendedores.length + " vendedor(es)"
       : "Nenhum vendedor cadastrado ainda.";
-    vendorGrid.innerHTML = "";
     state.vendedores
       .slice()
       .sort(function (a, b) { return (a.nome || "").localeCompare(b.nome || ""); })
-      .forEach(function (v) { vendorGrid.appendChild(renderVendorCard(v)); });
+      .forEach(function (v) { vendorGrid.appendChild(renderVendorTile(v)); });
+  }
+
+  function renderVendorTile(vendor) {
+    var tile = document.createElement("button");
+    tile.className = "vendor-tile";
+    tile.addEventListener("click", function () { state.vendorAberto = vendor.id; renderVendors(); });
+
+    var count = state.comissoes.filter(function (c) { return c.vendedor_id === vendor.id; }).length;
+
+    var name = document.createElement("span");
+    name.className = "vendor-tile-name";
+    name.textContent = vendor.nome;
+
+    var meta = document.createElement("span");
+    meta.className = "vendor-tile-meta";
+    meta.textContent = count + (count === 1 ? " comissão" : " comissões");
+
+    var total = document.createElement("span");
+    total.className = "vendor-tile-total tabular";
+    total.textContent = fmtMoney(vendorTotal(vendor.id));
+
+    tile.appendChild(name);
+    tile.appendChild(meta);
+    tile.appendChild(total);
+    return tile;
   }
 
   function renderVendorCard(vendor) {
@@ -160,7 +207,9 @@
       var ids = state.comissoes.filter(function (c) { return c.vendedor_id === vendor.id; }).map(function (c) { return c.id; });
       if (ids.length) await supabase.from("comissoes").delete().in("id", ids);
       var res = await supabase.from("vendedores").delete().eq("id", vendor.id);
-      if (res.error) reportError(res.error); else loadAll();
+      if (res.error) return reportError(res.error);
+      state.vendorAberto = null;
+      loadAll();
     });
     head.appendChild(h3);
     head.appendChild(delBtn);
