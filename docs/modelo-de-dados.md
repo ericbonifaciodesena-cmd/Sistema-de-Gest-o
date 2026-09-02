@@ -6,19 +6,20 @@ um campo de texto dentro da comissão, igual ao protótipo e à planilha atual.
 
 ## Entidades
 
-### Usuário (equipe interna, com login)
+### Perfil (equipe interna, com login)
 Pessoas que operam o sistema: cadastram comissões e gerenciam tarefas.
-Hoje são duas pessoas (Eric e Pedro), mas o campo `papel` já existe para
-diferenciar permissões no futuro se necessário.
+Login é feito pelo Supabase Auth (e-mail/senha) — não guardamos senha
+própria. `perfis` é só o complemento de exibição (nome, papel), ligado
+1:1 ao usuário do Auth pelo mesmo `id`. Hoje são duas pessoas (Eric e
+Pedro), mas o campo `papel` já existe para diferenciar permissões no
+futuro se necessário. Um gatilho cria a linha em `perfis`
+automaticamente quando alguém é cadastrado no Auth.
 
-| Campo         | Tipo      | Observação                          |
-|---------------|-----------|--------------------------------------|
-| id            | uuid      | chave primária                       |
-| nome          | text      |                                       |
-| email         | text      | único, usado no login                |
-| senha_hash    | text      | nunca a senha em texto puro          |
-| papel         | text      | `admin` (por enquanto todos são admin) |
-| criado_em     | timestamp |                                       |
+| Campo | Tipo | Observação |
+|-------|------|------------|
+| id    | uuid | mesmo id do `auth.users` (chave primária e estrangeira) |
+| nome  | text | preenchido a partir do e-mail no cadastro, editável depois |
+| papel | text | `admin` (por enquanto todos são admin) |
 
 ### Vendedor (parceiro, sem login)
 Vendedores parceiros que recebem comissão. Não acessam o sistema — são só
@@ -58,7 +59,7 @@ abaixo, e o histórico é a mesma tabela filtrada por `arquivada = true`.
 | Campo         | Tipo      | Observação |
 |---------------|-----------|------------|
 | id            | uuid      | chave primária |
-| responsavel_id| uuid (FK) | → Usuário (sempre equipe interna) |
+| responsavel_id| uuid (FK) | → Perfil (sempre equipe interna) |
 | descricao     | text      | |
 | data          | date      | data da tarefa |
 | concluida     | boolean   | default false |
@@ -69,13 +70,14 @@ abaixo, e o histórico é a mesma tabela filtrada por `arquivada = true`.
 ## Relacionamentos
 
 ```
-Usuário 1 ── N Tarefa           (responsavel_id)
-Vendedor 1 ── N Comissão        (vendedor_id)
+Perfil 1 ── N Tarefa           (responsavel_id)
+Vendedor 1 ── N Comissão       (vendedor_id)
 ```
 
-Usuário e Vendedor não se relacionam diretamente nesta fase — são dois
+Perfil e Vendedor não se relacionam diretamente nesta fase — são dois
 cadastros de pessoas com papéis totalmente diferentes (quem opera o sistema
-vs. quem recebe comissão).
+vs. quem recebe comissão). Acesso é protegido por Row Level Security: só
+usuários autenticados (Eric e Pedro) leem e escrevem os dados.
 
 ## Fora do escopo desta fase
 

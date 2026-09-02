@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comissões &amp; Rotina</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="login-wrap" class="login-wrap">
+    <form id="login-form" class="login-card">
+      <p class="mark">Comissões &amp; Rotina</p>
+      <p class="tag">controle interno · login da equipe</p>
+      <div class="field">
+        <label for="login-email">E-mail</label>
+        <input id="login-email" type="email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Senha</label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn">Entrar</button>
+      <p class="login-error" id="login-error"></p>
+    </form>
+  </div>
+
+  <div id="app-wrap" class="app" hidden>
+    <div class="topbar">
+      <div class="brand">
+        <span class="mark">Comissões &amp; Rotina</span>
+        <span class="tag">controle interno</span>
+      </div>
+      <div class="who">
+        <span class="name" id="who-name"></span>
+        <button id="logout-btn">Sair</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-comissoes" role="tab" aria-selected="true">Comissões</button>
+      <button class="tab" id="tab-tarefas" role="tab" aria-selected="false">Tarefas</button>
+    </div>
+
+    <div class="panel active" id="panel-comissoes">
+      <div class="toolbar">
+        <span class="hint" id="comissoes-hint">Carregando…</span>
+        <button class="btn ghost" id="add-vendor-btn">+ vendedor</button>
+      </div>
+      <div class="vendor-grid" id="vendor-grid"></div>
+    </div>
+
+    <div class="panel" id="panel-tarefas">
+      <div class="history-toggle">
+        <button class="btn ghost small" id="history-btn">Ver histórico</button>
+      </div>
+      <div id="board">
+        <div class="week-grid" id="week-grid"></div>
+      </div>
+      <div id="historico">
+        <table class="history">
+          <thead><tr><th>Data</th><th>Dia</th><th>Tarefa</th><th>Responsável</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
