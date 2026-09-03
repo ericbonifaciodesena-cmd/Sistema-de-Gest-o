@@ -1,5 +1,6 @@
 (function () {
   var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  window.__sb = supabase; // temporário, para depuração pelo console
 
   var DAY_NAMES = ["Seg.", "Ter.", "Qua.", "Qui.", "Sex."];
   var state = { session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null };
