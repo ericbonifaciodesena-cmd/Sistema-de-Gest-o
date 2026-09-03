@@ -92,6 +92,23 @@
     await supabase.auth.signOut();
   });
 
+  document.getElementById("backup-btn").addEventListener("click", async function () {
+    var tabelas = ["vendedores", "comissoes", "tarefas", "cobranca_clientes", "parcelas"];
+    var backup = { exportado_em: new Date().toISOString() };
+    for (var i = 0; i < tabelas.length; i++) {
+      var res = await supabase.from(tabelas[i]).select("*");
+      if (res.error) return reportError(res.error);
+      backup[tabelas[i]] = res.data;
+    }
+    var blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "backup-sistema-" + todayISO() + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
   supabase.auth.onAuthStateChange(function (event, session) {
     state.session = session;
     if (session) {
