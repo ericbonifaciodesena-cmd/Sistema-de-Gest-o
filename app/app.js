@@ -897,24 +897,35 @@
   crmAddToggle.addEventListener("click", function () { crmNewForm.hidden = !crmNewForm.hidden; });
   document.getElementById("crm-add-cancel").addEventListener("click", function () { crmNewForm.hidden = true; });
   document.getElementById("crm-add-confirm").addEventListener("click", async function () {
+    var titulo = document.getElementById("crm-titulo").value.trim();
     var nome = document.getElementById("crm-nome").value.trim();
-    if (!nome) return;
-    var contato = document.getElementById("crm-contato").value.trim();
+    if (!titulo || !nome) return;
+    var email = document.getElementById("crm-email").value.trim();
+    var telefone = document.getElementById("crm-telefone").value.trim();
     var valorRaw = document.getElementById("crm-valor").value;
     var res = await supabase.from("negocios").insert({
+      titulo: titulo,
       cliente_nome: nome,
-      contato: contato || null,
+      email: email || null,
+      telefone: telefone || null,
       tipo: state.crmTipo,
       estagio: ESTAGIOS[state.crmTipo][0],
       valor: valorRaw ? parseFloat(valorRaw) : null
     });
     if (res.error) return reportError(res.error);
+    document.getElementById("crm-titulo").value = "";
     document.getElementById("crm-nome").value = "";
-    document.getElementById("crm-contato").value = "";
+    document.getElementById("crm-email").value = "";
+    document.getElementById("crm-telefone").value = "";
     document.getElementById("crm-valor").value = "";
     crmNewForm.hidden = true;
     loadAll();
   });
+
+  async function moverNegocioParaEstagio(id, estagio) {
+    var res = await supabase.from("negocios").update({ estagio: estagio }).eq("id", id);
+    if (res.error) reportError(res.error); else loadAll();
+  }
 
   function renderCrm() {
     var estagios = ESTAGIOS[state.crmTipo];
@@ -944,6 +955,18 @@
       itens.forEach(function (n) { body.appendChild(renderCrmCard(n)); });
       col.appendChild(body);
 
+      body.addEventListener("dragover", function (ev) {
+        ev.preventDefault();
+        body.classList.add("drag-over");
+      });
+      body.addEventListener("dragleave", function () { body.classList.remove("drag-over"); });
+      body.addEventListener("drop", function (ev) {
+        ev.preventDefault();
+        body.classList.remove("drag-over");
+        var id = ev.dataTransfer.getData("text/plain");
+        if (id) moverNegocioParaEstagio(id, estagio);
+      });
+
       crmBoard.appendChild(col);
     });
   }
@@ -951,10 +974,24 @@
   function renderCrmCard(n) {
     var card = document.createElement("button");
     card.className = "crm-card status-" + n.status;
+    card.draggable = true;
+    card.addEventListener("dragstart", function (ev) {
+      ev.dataTransfer.setData("text/plain", n.id);
+      ev.dataTransfer.effectAllowed = "move";
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend", function () { card.classList.remove("dragging"); });
+
+    var titulo = document.createElement("div");
+    titulo.className = "crm-card-title";
+    titulo.textContent = n.titulo;
+    card.appendChild(titulo);
+
     var name = document.createElement("div");
     name.className = "crm-card-name";
     name.textContent = n.cliente_nome;
     card.appendChild(name);
+
     if (n.valor) {
       var val = document.createElement("div");
       val.className = "crm-card-value tabular";
@@ -989,6 +1026,22 @@
     await supabase.from("negocios").update({ valor: v }).eq("id", state.crmModalNegocioId);
   });
 
+  function crmBindTextField(elId, campo) {
+    var el = document.getElementById(elId);
+    el.addEventListener("blur", async function () {
+      var v = el.value.trim();
+      var res = await supabase.from("negocios").update(
+        Object.fromEntries([[campo, v || null]])
+      ).eq("id", state.crmModalNegocioId);
+      if (res.error) reportError(res.error); else loadAll();
+    });
+    return el;
+  }
+  var crmModalTitulo = crmBindTextField("crm-modal-titulo", "titulo");
+  var crmModalClienteNome = crmBindTextField("crm-modal-cliente-nome", "cliente_nome");
+  var crmModalEmail = crmBindTextField("crm-modal-email", "email");
+  var crmModalTelefone = crmBindTextField("crm-modal-telefone", "telefone");
+
   function crmSetStatus(status) {
     return async function () {
       var res = await supabase.from("negocios").update({ status: status }).eq("id", state.crmModalNegocioId);
@@ -1018,15 +1071,18 @@
 
   document.getElementById("crm-modal-add-atividade").addEventListener("click", async function () {
     var input = document.getElementById("crm-modal-nova-atividade");
+    var dataInput = document.getElementById("crm-modal-atividade-data");
     var desc = input.value.trim();
     if (!desc) return;
     var res = await supabase.from("atividades").insert({
       negocio_id: state.crmModalNegocioId,
       autor_id: state.perfil.id,
-      descricao: desc
+      descricao: desc,
+      data_agendada: dataInput.value || todayISO()
     });
     if (res.error) return reportError(res.error);
     input.value = "";
+    dataInput.value = "";
     loadAll();
   });
 
@@ -1034,8 +1090,10 @@
     var n = state.negocios.find(function (x) { return x.id === state.crmModalNegocioId; });
     if (!n) return;
 
-    document.getElementById("crm-modal-nome").textContent = n.cliente_nome;
-    document.getElementById("crm-modal-contato").textContent = n.contato || "sem contato registrado";
+    if (document.activeElement !== crmModalTitulo) crmModalTitulo.value = n.titulo || "";
+    if (document.activeElement !== crmModalClienteNome) crmModalClienteNome.value = n.cliente_nome || "";
+    if (document.activeElement !== crmModalEmail) crmModalEmail.value = n.email || "";
+    if (document.activeElement !== crmModalTelefone) crmModalTelefone.value = n.telefone || "";
 
     var badge = document.getElementById("crm-modal-status-badge");
     badge.className = "status-chip " + n.status;
@@ -1086,24 +1144,54 @@
     atvWrap.innerHTML = "";
     var atvs = state.atividades
       .filter(function (a) { return a.negocio_id === n.id; })
-      .sort(function (a, b) { return (b.criado_em || "").localeCompare(a.criado_em || ""); });
+      .sort(function (a, b) { return (a.data_agendada || "").localeCompare(b.data_agendada || ""); });
     if (!atvs.length) {
       var emptyA = document.createElement("div");
       emptyA.className = "crm-empty-col";
       emptyA.textContent = "Nenhuma atividade registrada ainda.";
       atvWrap.appendChild(emptyA);
     }
+    var today = todayISO();
     atvs.forEach(function (a) {
       var row = document.createElement("div");
       row.className = "crm-atividade-row";
+
+      var top = document.createElement("div");
+      top.style.display = "flex";
+      top.style.alignItems = "center";
+      top.style.gap = "6px";
+      top.style.width = "100%";
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!a.concluida;
+      cb.addEventListener("change", async function () {
+        var res = await supabase.from("atividades").update({ concluida: cb.checked }).eq("id", a.id);
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      top.appendChild(cb);
+
       var desc = document.createElement("div");
+      desc.style.flex = "1";
       desc.textContent = a.descricao;
+      if (a.concluida) desc.style.textDecoration = "line-through";
+      top.appendChild(desc);
+
+      var dateBadge = document.createElement("span");
+      dateBadge.className = "crm-atividade-meta";
+      var futura = a.data_agendada > today;
+      var atrasada = a.data_agendada < today && !a.concluida;
+      dateBadge.style.color = atrasada ? "var(--bad)" : futura ? "var(--accent)" : "";
+      dateBadge.textContent = fmtDate(a.data_agendada) + (futura ? " · agendada" : atrasada ? " · atrasada" : "");
+      top.appendChild(dateBadge);
+
+      row.appendChild(top);
+
       var meta = document.createElement("div");
       meta.className = "crm-atividade-meta";
-      var d = new Date(a.criado_em);
-      meta.textContent = (a.perfis ? a.perfis.nome : "") + " · " + d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      row.appendChild(desc);
+      meta.textContent = "por " + (a.perfis ? a.perfis.nome : "—");
       row.appendChild(meta);
+
       atvWrap.appendChild(row);
     });
   }

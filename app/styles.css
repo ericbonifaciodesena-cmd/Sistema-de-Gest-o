@@ -237,17 +237,28 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 .crm-col-title { font-weight: 700; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.02em; }
 .crm-col-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .crm-col-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 60px; }
+.crm-col-body.drag-over { background: var(--accent-weak); border-radius: 0 0 12px 12px; }
 .crm-empty-col { color: var(--muted); font-size: 12px; font-style: italic; padding: 4px 2px; }
 
 .crm-card {
   background: var(--surface-2); border-radius: 8px; padding: 9px 11px; text-align: left;
-  border: none; font-family: inherit; cursor: pointer; display: block; width: 100%;
+  border: none; font-family: inherit; cursor: grab; display: block; width: 100%;
 }
 .crm-card:hover { outline: 1px solid var(--accent); }
-.crm-card-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.crm-card.dragging { opacity: 0.4; }
+.crm-card-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.crm-card-name { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .crm-card-value { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .crm-card.status-ganho { border-left: 3px solid var(--good); }
 .crm-card.status-perdido { border-left: 3px solid var(--bad); opacity: 0.7; }
+
+.crm-title-input {
+  background: transparent; border: none; font-family: "Fraunces", serif; font-size: 18px;
+  font-weight: 600; color: var(--ink); width: 100%; padding: 2px 0;
+}
+.crm-title-input:focus { outline: none; border-bottom: 1px solid var(--accent); }
+.crm-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.crm-atividade-date { max-width: 150px; }
 
 .crm-modal-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .status-chip.aberto { background: var(--accent-weak); color: var(--accent); }
@@ -262,5 +273,6 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 .crm-atividade-row { flex-direction: column; align-items: flex-start; gap: 2px; }
 .crm-atividade-meta { font-size: 11px; color: var(--muted); }
 .crm-add-atividade { display: flex; gap: 6px; margin-top: 8px; }
+.crm-add-atividade input#crm-modal-nova-atividade { flex: 1; min-width: 0; }
 
 @media (max-width: 900px) { .crm-board { grid-template-columns: 1fr; } }

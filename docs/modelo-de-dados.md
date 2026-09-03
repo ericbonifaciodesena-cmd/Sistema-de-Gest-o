@@ -113,8 +113,10 @@ sem precisar mover de coluna antes.
 | Campo        | Tipo          | Observação |
 |--------------|---------------|------------|
 | id           | uuid          | chave primária |
-| cliente_nome | text          | |
-| contato      | text          | telefone/e-mail, opcional |
+| titulo       | text          | título do negócio (ex: "Seguro Auto — Fulano") |
+| cliente_nome | text          | pessoa vinculada ao negócio |
+| email        | text          | opcional |
+| telefone     | text          | opcional |
 | tipo         | text          | `novo` \| `renovacao` |
 | estagio      | text          | ver etapas abaixo, validado por `tipo` |
 | status       | text          | `aberto` \| `ganho` \| `perdido` |
@@ -141,16 +143,19 @@ guarda a referência.
 | criado_em    | timestamp | |
 
 ### Atividade
-Histórico de interação (ligação, e-mail, observação) por negócio — o
-equivalente às notas de atividade do Pipedrive.
+Interação (ligação, e-mail, reunião, observação) por negócio, com data —
+pode ser registrada pra hoje (uma nota) ou agendada pra uma data futura
+(um lembrete), igual às atividades do Pipedrive.
 
-| Campo      | Tipo      | Observação |
-|------------|-----------|------------|
-| id         | uuid      | chave primária |
-| negocio_id | uuid (FK) | → Negócio |
-| autor_id   | uuid (FK) | → Perfil, quem registrou |
-| descricao  | text      | |
-| criado_em  | timestamp | |
+| Campo         | Tipo      | Observação |
+|---------------|-----------|------------|
+| id            | uuid      | chave primária |
+| negocio_id    | uuid (FK) | → Negócio |
+| autor_id      | uuid (FK) | → Perfil, quem registrou |
+| descricao     | text      | |
+| data_agendada | date      | hoje (nota) ou uma data futura (agendada) |
+| concluida     | boolean   | marca quando a atividade agendada foi feita |
+| criado_em     | timestamp | |
 
 ## Relacionamentos
 

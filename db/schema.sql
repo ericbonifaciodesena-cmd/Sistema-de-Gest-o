@@ -103,9 +103,11 @@ create index idx_parcelas_data on parcelas(data);
 -- Pipedrive — um negócio pode ser marcado ganho/perdido de qualquer
 -- etapa, sem precisar mover de coluna antes.
 create table negocios (
-    id          uuid primary key default gen_random_uuid(),
+    id           uuid primary key default gen_random_uuid(),
+    titulo       text not null,
     cliente_nome text not null,
-    contato     text,
+    email        text,
+    telefone     text,
     tipo        text not null check (tipo in ('novo', 'renovacao')),
     estagio     text not null,
     status      text not null default 'aberto' check (status in ('aberto', 'ganho', 'perdido')),
@@ -131,14 +133,17 @@ create table cotacoes (
 create index idx_cotacoes_negocio on cotacoes(negocio_id);
 
 create table atividades (
-    id          uuid primary key default gen_random_uuid(),
-    negocio_id  uuid not null references negocios(id) on delete cascade,
-    autor_id    uuid references perfis(id),
-    descricao   text not null,
-    criado_em   timestamptz not null default now()
+    id            uuid primary key default gen_random_uuid(),
+    negocio_id    uuid not null references negocios(id) on delete cascade,
+    autor_id      uuid references perfis(id),
+    descricao     text not null,
+    data_agendada date not null default current_date,
+    concluida     boolean not null default false,
+    criado_em     timestamptz not null default now()
 );
 
 create index idx_atividades_negocio on atividades(negocio_id);
+create index idx_atividades_data on atividades(data_agendada);
 
 -- bucket privado pra guardar os PDFs de cotação
 insert into storage.buckets (id, name, public)
