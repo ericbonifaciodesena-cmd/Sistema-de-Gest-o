@@ -10,8 +10,19 @@ create extension if not exists "pgcrypto";
 create table perfis (
     id     uuid primary key references auth.users(id) on delete cascade,
     nome   text not null,
-    papel  text not null default 'admin' check (papel in ('admin'))
+    papel  text not null default 'admin' check (papel in ('admin', 'cobranca'))
 );
+
+-- lê o papel do usuário logado sem disparar recursão de RLS em perfis
+-- (usada dentro das próprias políticas de acesso abaixo)
+create or replace function public.current_papel()
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select papel from perfis where id = auth.uid();
+$$;
 
 -- cria o perfil automaticamente quando alguém é cadastrado no Auth
 create or replace function public.handle_new_user()
@@ -86,9 +97,9 @@ create table parcelas (
 create index idx_parcelas_cliente on parcelas(cliente_id);
 create index idx_parcelas_data on parcelas(data);
 
--- RLS: só quem está logado (equipe interna) lê e escreve.
--- Sem login real por enquanto, o acesso é "qualquer usuário autenticado",
--- já que só Eric e Pedro terão conta.
+-- RLS: comissões, tarefas e vendedores são só para `admin`. Cobrança
+-- (cliente + parcelas) é para qualquer usuário logado, admin ou
+-- `cobranca` — hoje isso é Eric, Pedro (admin) e Thais (cobranca).
 alter table perfis enable row level security;
 alter table vendedores enable row level security;
 alter table comissoes enable row level security;
@@ -99,14 +110,14 @@ alter table parcelas enable row level security;
 create policy "equipe interna le perfis" on perfis
     for select using (auth.uid() is not null);
 
-create policy "equipe interna acessa vendedores" on vendedores
-    for all using (auth.uid() is not null) with check (auth.uid() is not null);
+create policy "admin acessa vendedores" on vendedores
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
 
-create policy "equipe interna acessa comissoes" on comissoes
-    for all using (auth.uid() is not null) with check (auth.uid() is not null);
+create policy "admin acessa comissoes" on comissoes
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
 
-create policy "equipe interna acessa tarefas" on tarefas
-    for all using (auth.uid() is not null) with check (auth.uid() is not null);
+create policy "admin acessa tarefas" on tarefas
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
 
 create policy "equipe interna acessa cobranca_clientes" on cobranca_clientes
     for all using (auth.uid() is not null) with check (auth.uid() is not null);

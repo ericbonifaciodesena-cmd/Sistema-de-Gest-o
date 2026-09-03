@@ -131,9 +131,17 @@
     if (perfilRes.error) { reportError(perfilRes.error); return; }
     state.perfil = perfilRes.data;
     document.getElementById("who-name").textContent = state.perfil.nome;
+    applyPermissions();
 
     await loadAll();
     setupSubscriptions();
+  }
+
+  function applyPermissions() {
+    var isAdmin = state.perfil.papel === "admin";
+    tabComissoes.hidden = !isAdmin;
+    tabTarefas.hidden = !isAdmin;
+    if (!isAdmin) selectTab("cobrancas"); else selectTab("comissoes");
   }
 
   // ---- tabs ----
