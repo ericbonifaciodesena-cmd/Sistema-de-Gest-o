@@ -226,3 +226,41 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 .cb-parcela-value { font-weight: 600; white-space: nowrap; }
 
 @media (max-width: 640px) { .cb-stats { grid-template-columns: 1fr; } }
+
+/* crm */
+.crm-pipe-toggle { display: flex; gap: 8px; }
+#crm-new-form { margin-bottom: 18px; }
+
+.crm-board { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 12px; overflow-x: auto; }
+.crm-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-width: 200px; }
+.crm-col-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
+.crm-col-title { font-weight: 700; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.02em; }
+.crm-col-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.crm-col-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 60px; }
+.crm-empty-col { color: var(--muted); font-size: 12px; font-style: italic; padding: 4px 2px; }
+
+.crm-card {
+  background: var(--surface-2); border-radius: 8px; padding: 9px 11px; text-align: left;
+  border: none; font-family: inherit; cursor: pointer; display: block; width: 100%;
+}
+.crm-card:hover { outline: 1px solid var(--accent); }
+.crm-card-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.crm-card-value { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.crm-card.status-ganho { border-left: 3px solid var(--good); }
+.crm-card.status-perdido { border-left: 3px solid var(--bad); opacity: 0.7; }
+
+.crm-modal-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.status-chip.aberto { background: var(--accent-weak); color: var(--accent); }
+.status-chip.ganho { background: var(--good-weak); color: var(--good); }
+.status-chip.perdido { background: var(--bad-weak); color: var(--bad); }
+
+.crm-cotacao-row, .crm-atividade-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.crm-cotacao-row:last-child, .crm-atividade-row:last-child { border-bottom: none; }
+.crm-atividade-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+.crm-atividade-meta { font-size: 11px; color: var(--muted); }
+.crm-add-atividade { display: flex; gap: 6px; margin-top: 8px; }
+
+@media (max-width: 900px) { .crm-board { grid-template-columns: 1fr; } }

@@ -49,6 +49,7 @@
       <button class="tab" id="tab-comissoes" role="tab" aria-selected="true">Comissões</button>
       <button class="tab" id="tab-tarefas" role="tab" aria-selected="false">Tarefas</button>
       <button class="tab" id="tab-cobrancas" role="tab" aria-selected="false">Cobranças</button>
+      <button class="tab" id="tab-crm" role="tab" aria-selected="false">CRM</button>
     </div>
 
     <div class="panel active" id="panel-comissoes">
@@ -114,6 +115,67 @@
       </div>
 
       <div id="cb-fila"></div>
+    </div>
+
+    <div class="panel" id="panel-crm">
+      <div class="toolbar">
+        <div class="crm-pipe-toggle">
+          <button type="button" class="chip crm-pipe-chip is-on" id="crm-pipe-novo" data-tipo="novo">Seguros Novos</button>
+          <button type="button" class="chip crm-pipe-chip" id="crm-pipe-renovacao" data-tipo="renovacao">Renovação</button>
+        </div>
+        <button class="btn ghost" id="crm-add-toggle">+ negócio</button>
+      </div>
+
+      <div class="cb-new-form" id="crm-new-form" hidden>
+        <input id="crm-nome" class="cb-input" placeholder="Nome do cliente">
+        <label class="cb-label">Contato (telefone/e-mail)</label>
+        <input id="crm-contato" class="cb-input" placeholder="opcional">
+        <label class="cb-label">Valor estimado</label>
+        <input id="crm-valor" class="cb-input" type="number" step="0.01" placeholder="opcional">
+        <div class="cb-new-actions">
+          <button class="btn small" id="crm-add-confirm">Adicionar negócio</button>
+          <button class="btn ghost small" id="crm-add-cancel">Cancelar</button>
+        </div>
+      </div>
+
+      <div id="crm-board" class="crm-board"></div>
+    </div>
+  </div>
+
+  <div id="crm-modal-overlay" class="cb-modal-overlay" hidden>
+    <div class="cb-modal" id="crm-modal">
+      <div class="cb-modal-head">
+        <div>
+          <h2 id="crm-modal-nome"></h2>
+          <p class="tag" id="crm-modal-contato"></p>
+        </div>
+        <button class="icon-btn" id="crm-modal-close">✕</button>
+      </div>
+
+      <div class="crm-modal-status">
+        <span class="tag">Status:</span>
+        <span id="crm-modal-status-badge" class="status-chip"></span>
+        <button class="btn ghost small" id="crm-modal-ganho">Ganho</button>
+        <button class="btn ghost small" id="crm-modal-perdido">Perdido</button>
+        <button class="btn ghost small" id="crm-modal-reabrir" hidden>Reabrir</button>
+      </div>
+
+      <label class="cb-label" style="margin-top:14px;">Estágio</label>
+      <select id="crm-modal-estagio" class="cb-input"></select>
+
+      <label class="cb-label" style="margin-top:14px;">Valor estimado</label>
+      <input id="crm-modal-valor" class="cb-input" type="number" step="0.01">
+
+      <label class="cb-label" style="margin-top:14px;">Cotações (PDF)</label>
+      <div id="crm-modal-cotacoes"></div>
+      <input id="crm-modal-pdf-input" type="file" accept="application/pdf" style="margin-top:6px;">
+
+      <label class="cb-label" style="margin-top:14px;">Atividades</label>
+      <div id="crm-modal-atividades"></div>
+      <div class="crm-add-atividade">
+        <input id="crm-modal-nova-atividade" class="cb-input" placeholder="Registrar ligação, e-mail, observação...">
+        <button class="btn small" id="crm-modal-add-atividade">Adicionar</button>
+      </div>
     </div>
   </div>
 

@@ -2,10 +2,15 @@
   var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
   var DAY_NAMES = ["Seg.", "Ter.", "Qua.", "Qui.", "Sex."];
+  var ESTAGIOS = {
+    novo: ["Pedido de cotação", "Cotação Realizada", "Proposta Apresentada", "Follow Up", "Negócio Fechado"],
+    renovacao: ["Pedido de renovação", "Renovação Realizada", "Proposta Apresentada", "Follow Up", "Negócio Fechado"]
+  };
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
     cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null,
-    novaTarefaDrafts: {}
+    novaTarefaDrafts: {},
+    negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null
   };
 
   function safeStorageGet(key) {
@@ -157,8 +162,9 @@
     var isAdmin = state.perfil.papel === "admin";
     tabComissoes.hidden = !isAdmin;
     tabTarefas.hidden = !isAdmin;
+    tabCrm.hidden = !isAdmin;
     var lembrada = safeStorageGet("abaAtiva");
-    var valida = isAdmin ? ["comissoes", "tarefas", "cobrancas"] : ["cobrancas"];
+    var valida = isAdmin ? ["comissoes", "tarefas", "cobrancas", "crm"] : ["cobrancas"];
     selectTab(valida.indexOf(lembrada) !== -1 ? lembrada : valida[0]);
   }
 
@@ -166,41 +172,55 @@
   var tabComissoes = document.getElementById("tab-comissoes");
   var tabTarefas = document.getElementById("tab-tarefas");
   var tabCobrancas = document.getElementById("tab-cobrancas");
+  var tabCrm = document.getElementById("tab-crm");
   var panelComissoes = document.getElementById("panel-comissoes");
   var panelTarefas = document.getElementById("panel-tarefas");
   var panelCobrancas = document.getElementById("panel-cobrancas");
+  var panelCrm = document.getElementById("panel-crm");
   function selectTab(which) {
     tabComissoes.setAttribute("aria-selected", String(which === "comissoes"));
     tabTarefas.setAttribute("aria-selected", String(which === "tarefas"));
     tabCobrancas.setAttribute("aria-selected", String(which === "cobrancas"));
+    tabCrm.setAttribute("aria-selected", String(which === "crm"));
     panelComissoes.classList.toggle("active", which === "comissoes");
     panelTarefas.classList.toggle("active", which === "tarefas");
     panelCobrancas.classList.toggle("active", which === "cobrancas");
+    panelCrm.classList.toggle("active", which === "crm");
     safeStorageSet("abaAtiva", which);
   }
   tabComissoes.addEventListener("click", function () { selectTab("comissoes"); });
   tabTarefas.addEventListener("click", function () { selectTab("tarefas"); });
   tabCobrancas.addEventListener("click", function () { selectTab("cobrancas"); });
+  tabCrm.addEventListener("click", function () { selectTab("crm"); });
 
   // ---- data loading ----
   async function loadAll() {
-    var [vRes, cRes, tRes, ccRes, pRes] = await Promise.all([
+    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes] = await Promise.all([
       supabase.from("vendedores").select("*"),
       supabase.from("comissoes").select("*"),
       supabase.from("tarefas").select("*, perfis(nome)"),
       supabase.from("cobranca_clientes").select("*"),
-      supabase.from("parcelas").select("*")
+      supabase.from("parcelas").select("*"),
+      supabase.from("negocios").select("*"),
+      supabase.from("cotacoes").select("*"),
+      supabase.from("atividades").select("*, perfis(nome)")
     ]);
     if (vRes.error) return reportError(vRes.error);
     if (cRes.error) return reportError(cRes.error);
     if (tRes.error) return reportError(tRes.error);
     if (ccRes.error) return reportError(ccRes.error);
     if (pRes.error) return reportError(pRes.error);
+    if (nRes.error) return reportError(nRes.error);
+    if (qRes.error) return reportError(qRes.error);
+    if (aRes.error) return reportError(aRes.error);
     state.vendedores = vRes.data;
     state.comissoes = cRes.data;
     state.tarefas = tRes.data;
     state.cobrancaClientes = ccRes.data;
     state.parcelas = pRes.data;
+    state.negocios = nRes.data;
+    state.cotacoes = qRes.data;
+    state.atividades = aRes.data;
     renderAll();
   }
 
@@ -212,6 +232,9 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "tarefas" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "cobranca_clientes" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "parcelas" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "negocios" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cotacoes" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "atividades" }, loadAll)
       .subscribe();
   }
   function teardownSubscriptions() {
@@ -854,11 +877,244 @@
     });
   }
 
+  // ---- render: crm ----
+  var crmBoard = document.getElementById("crm-board");
+  var crmPipeNovo = document.getElementById("crm-pipe-novo");
+  var crmPipeRenovacao = document.getElementById("crm-pipe-renovacao");
+  var crmAddToggle = document.getElementById("crm-add-toggle");
+  var crmNewForm = document.getElementById("crm-new-form");
+  var crmModalOverlay = document.getElementById("crm-modal-overlay");
+
+  function setCrmTipo(tipo) {
+    state.crmTipo = tipo;
+    crmPipeNovo.classList.toggle("is-on", tipo === "novo");
+    crmPipeRenovacao.classList.toggle("is-on", tipo === "renovacao");
+    renderCrm();
+  }
+  crmPipeNovo.addEventListener("click", function () { setCrmTipo("novo"); });
+  crmPipeRenovacao.addEventListener("click", function () { setCrmTipo("renovacao"); });
+
+  crmAddToggle.addEventListener("click", function () { crmNewForm.hidden = !crmNewForm.hidden; });
+  document.getElementById("crm-add-cancel").addEventListener("click", function () { crmNewForm.hidden = true; });
+  document.getElementById("crm-add-confirm").addEventListener("click", async function () {
+    var nome = document.getElementById("crm-nome").value.trim();
+    if (!nome) return;
+    var contato = document.getElementById("crm-contato").value.trim();
+    var valorRaw = document.getElementById("crm-valor").value;
+    var res = await supabase.from("negocios").insert({
+      cliente_nome: nome,
+      contato: contato || null,
+      tipo: state.crmTipo,
+      estagio: ESTAGIOS[state.crmTipo][0],
+      valor: valorRaw ? parseFloat(valorRaw) : null
+    });
+    if (res.error) return reportError(res.error);
+    document.getElementById("crm-nome").value = "";
+    document.getElementById("crm-contato").value = "";
+    document.getElementById("crm-valor").value = "";
+    crmNewForm.hidden = true;
+    loadAll();
+  });
+
+  function renderCrm() {
+    var estagios = ESTAGIOS[state.crmTipo];
+    var negociosDoTipo = state.negocios.filter(function (n) { return n.tipo === state.crmTipo; });
+
+    crmBoard.innerHTML = "";
+    estagios.forEach(function (estagio) {
+      var itens = negociosDoTipo.filter(function (n) { return n.estagio === estagio; });
+
+      var col = document.createElement("div");
+      col.className = "crm-col";
+
+      var head = document.createElement("div");
+      head.className = "crm-col-head";
+      head.innerHTML = "<div class=\"crm-col-title\">" + estagio + "</div>" +
+        "<div class=\"crm-col-meta\">" + itens.length + " negócio(s)</div>";
+      col.appendChild(head);
+
+      var body = document.createElement("div");
+      body.className = "crm-col-body";
+      if (!itens.length) {
+        var empty = document.createElement("div");
+        empty.className = "crm-empty-col";
+        empty.textContent = "Vazio.";
+        body.appendChild(empty);
+      }
+      itens.forEach(function (n) { body.appendChild(renderCrmCard(n)); });
+      col.appendChild(body);
+
+      crmBoard.appendChild(col);
+    });
+  }
+
+  function renderCrmCard(n) {
+    var card = document.createElement("button");
+    card.className = "crm-card status-" + n.status;
+    var name = document.createElement("div");
+    name.className = "crm-card-name";
+    name.textContent = n.cliente_nome;
+    card.appendChild(name);
+    if (n.valor) {
+      var val = document.createElement("div");
+      val.className = "crm-card-value tabular";
+      val.textContent = fmtMoney(Number(n.valor));
+      card.appendChild(val);
+    }
+    card.addEventListener("click", function () { openCrmModal(n.id); });
+    return card;
+  }
+
+  function openCrmModal(id) {
+    state.crmModalNegocioId = id;
+    renderCrmModal();
+    crmModalOverlay.hidden = false;
+  }
+  function closeCrmModal() {
+    crmModalOverlay.hidden = true;
+    state.crmModalNegocioId = null;
+  }
+  document.getElementById("crm-modal-close").addEventListener("click", closeCrmModal);
+  crmModalOverlay.addEventListener("click", function (ev) { if (ev.target === crmModalOverlay) closeCrmModal(); });
+
+  var crmModalEstagio = document.getElementById("crm-modal-estagio");
+  crmModalEstagio.addEventListener("change", async function () {
+    var res = await supabase.from("negocios").update({ estagio: crmModalEstagio.value }).eq("id", state.crmModalNegocioId);
+    if (res.error) reportError(res.error); else loadAll();
+  });
+
+  var crmModalValor = document.getElementById("crm-modal-valor");
+  crmModalValor.addEventListener("blur", async function () {
+    var v = crmModalValor.value ? parseFloat(crmModalValor.value) : null;
+    await supabase.from("negocios").update({ valor: v }).eq("id", state.crmModalNegocioId);
+  });
+
+  function crmSetStatus(status) {
+    return async function () {
+      var res = await supabase.from("negocios").update({ status: status }).eq("id", state.crmModalNegocioId);
+      if (res.error) reportError(res.error); else loadAll();
+    };
+  }
+  document.getElementById("crm-modal-ganho").addEventListener("click", crmSetStatus("ganho"));
+  document.getElementById("crm-modal-perdido").addEventListener("click", crmSetStatus("perdido"));
+  document.getElementById("crm-modal-reabrir").addEventListener("click", crmSetStatus("aberto"));
+
+  document.getElementById("crm-modal-pdf-input").addEventListener("change", async function (ev) {
+    var file = ev.target.files[0];
+    if (!file) return;
+    var negocioId = state.crmModalNegocioId;
+    var path = negocioId + "/" + Date.now() + "-" + file.name;
+    var upRes = await supabase.storage.from("cotacoes").upload(path, file);
+    if (upRes.error) return reportError(upRes.error);
+    var insRes = await supabase.from("cotacoes").insert({
+      negocio_id: negocioId,
+      arquivo_path: path,
+      nome_arquivo: file.name
+    });
+    if (insRes.error) return reportError(insRes.error);
+    ev.target.value = "";
+    loadAll();
+  });
+
+  document.getElementById("crm-modal-add-atividade").addEventListener("click", async function () {
+    var input = document.getElementById("crm-modal-nova-atividade");
+    var desc = input.value.trim();
+    if (!desc) return;
+    var res = await supabase.from("atividades").insert({
+      negocio_id: state.crmModalNegocioId,
+      autor_id: state.perfil.id,
+      descricao: desc
+    });
+    if (res.error) return reportError(res.error);
+    input.value = "";
+    loadAll();
+  });
+
+  function renderCrmModal() {
+    var n = state.negocios.find(function (x) { return x.id === state.crmModalNegocioId; });
+    if (!n) return;
+
+    document.getElementById("crm-modal-nome").textContent = n.cliente_nome;
+    document.getElementById("crm-modal-contato").textContent = n.contato || "sem contato registrado";
+
+    var badge = document.getElementById("crm-modal-status-badge");
+    badge.className = "status-chip " + n.status;
+    badge.textContent = n.status;
+    document.getElementById("crm-modal-ganho").hidden = n.status !== "aberto";
+    document.getElementById("crm-modal-perdido").hidden = n.status !== "aberto";
+    document.getElementById("crm-modal-reabrir").hidden = n.status === "aberto";
+
+    crmModalEstagio.innerHTML = "";
+    ESTAGIOS[n.tipo].forEach(function (est) {
+      var opt = document.createElement("option");
+      opt.value = est;
+      opt.textContent = est;
+      if (est === n.estagio) opt.selected = true;
+      crmModalEstagio.appendChild(opt);
+    });
+
+    if (document.activeElement !== crmModalValor) crmModalValor.value = n.valor || "";
+
+    var cotWrap = document.getElementById("crm-modal-cotacoes");
+    cotWrap.innerHTML = "";
+    var cots = state.cotacoes.filter(function (c) { return c.negocio_id === n.id; });
+    if (!cots.length) {
+      var emptyC = document.createElement("div");
+      emptyC.className = "crm-empty-col";
+      emptyC.textContent = "Nenhum PDF anexado ainda.";
+      cotWrap.appendChild(emptyC);
+    }
+    cots.forEach(function (c) {
+      var row = document.createElement("div");
+      row.className = "crm-cotacao-row";
+      var label = document.createElement("span");
+      label.textContent = c.nome_arquivo;
+      var openBtn = document.createElement("button");
+      openBtn.className = "btn ghost small";
+      openBtn.textContent = "Abrir";
+      openBtn.addEventListener("click", async function () {
+        var signed = await supabase.storage.from("cotacoes").createSignedUrl(c.arquivo_path, 300);
+        if (signed.error) return reportError(signed.error);
+        window.open(signed.data.signedUrl, "_blank");
+      });
+      row.appendChild(label);
+      row.appendChild(openBtn);
+      cotWrap.appendChild(row);
+    });
+
+    var atvWrap = document.getElementById("crm-modal-atividades");
+    atvWrap.innerHTML = "";
+    var atvs = state.atividades
+      .filter(function (a) { return a.negocio_id === n.id; })
+      .sort(function (a, b) { return (b.criado_em || "").localeCompare(a.criado_em || ""); });
+    if (!atvs.length) {
+      var emptyA = document.createElement("div");
+      emptyA.className = "crm-empty-col";
+      emptyA.textContent = "Nenhuma atividade registrada ainda.";
+      atvWrap.appendChild(emptyA);
+    }
+    atvs.forEach(function (a) {
+      var row = document.createElement("div");
+      row.className = "crm-atividade-row";
+      var desc = document.createElement("div");
+      desc.textContent = a.descricao;
+      var meta = document.createElement("div");
+      meta.className = "crm-atividade-meta";
+      var d = new Date(a.criado_em);
+      meta.textContent = (a.perfis ? a.perfis.nome : "") + " · " + d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      row.appendChild(desc);
+      row.appendChild(meta);
+      atvWrap.appendChild(row);
+    });
+  }
+
   function renderAll() {
     renderVendors();
     renderWeek();
     if (showingHistory) renderHistory();
     renderCobrancas();
     if (state.cbModalClienteId) renderCbModal();
+    renderCrm();
+    if (state.crmModalNegocioId) renderCrmModal();
   }
 })();

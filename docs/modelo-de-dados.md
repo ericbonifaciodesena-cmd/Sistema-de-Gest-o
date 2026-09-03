@@ -1,10 +1,9 @@
-# Modelo de dados — Comissões, Tarefas e Cobrança
+# Modelo de dados — Comissões, Tarefas, Cobrança e CRM
 
-Escopo desta fase: **comissões**, **tarefas** e **cobrança**. O CRM
-(clientes/negócios vindos do Pipedrive) entra em uma fase futura — por
-enquanto o cliente da comissão é só um campo de texto, e o cliente de
-cobrança é um cadastro próprio, simples, sem ligação com o Pipedrive
-ainda.
+Escopo desta fase: **comissões**, **tarefas**, **cobrança** e **CRM**
+(negócios). O cliente da comissão e o cliente de cobrança continuam sendo
+cadastros próprios, simples — só o CRM tem o conceito completo de negócio
+com funil, status e histórico, no lugar do Pipedrive.
 
 ## Entidades
 
@@ -104,26 +103,79 @@ para cada cliente, a parcela `pendente` de menor data. Marcar "cobrado e
 pago" só muda o status dessa parcela — a próxima parcela pendente (já
 existe, criada junto com as outras) aparece sozinha na fila depois.
 
+### Negócio (CRM)
+Substitui o Pipedrive. Dois funis (`tipo`): **novo** seguro ou
+**renovação** — cada um com suas próprias etapas. `estagio` é a etapa do
+funil; `status` é **independente do estágio**, igual ao Pipedrive: um
+negócio pode ser marcado `ganho` ou `perdido` a partir de qualquer etapa,
+sem precisar mover de coluna antes.
+
+| Campo        | Tipo          | Observação |
+|--------------|---------------|------------|
+| id           | uuid          | chave primária |
+| cliente_nome | text          | |
+| contato      | text          | telefone/e-mail, opcional |
+| tipo         | text          | `novo` \| `renovacao` |
+| estagio      | text          | ver etapas abaixo, validado por `tipo` |
+| status       | text          | `aberto` \| `ganho` \| `perdido` |
+| valor        | numeric(12,2) | opcional |
+| criado_em    | timestamp     | |
+
+Etapas do funil **novo**: Pedido de cotação → Cotação Realizada → Proposta
+Apresentada → Follow Up → Negócio Fechado.
+Etapas do funil **renovação**: Pedido de renovação → Renovação Realizada →
+Proposta Apresentada → Follow Up → Negócio Fechado.
+(Um `check` no banco garante que o estágio bate com o tipo do negócio.)
+
+### Cotação (PDF)
+Arquivo de cotação anexado a um negócio. O arquivo em si fica no Storage
+do Supabase (bucket privado `cotacoes`, só admin acessa); esta tabela só
+guarda a referência.
+
+| Campo        | Tipo      | Observação |
+|--------------|-----------|------------|
+| id           | uuid      | chave primária |
+| negocio_id   | uuid (FK) | → Negócio |
+| arquivo_path | text      | caminho no bucket `cotacoes` |
+| nome_arquivo | text      | nome original do PDF |
+| criado_em    | timestamp | |
+
+### Atividade
+Histórico de interação (ligação, e-mail, observação) por negócio — o
+equivalente às notas de atividade do Pipedrive.
+
+| Campo      | Tipo      | Observação |
+|------------|-----------|------------|
+| id         | uuid      | chave primária |
+| negocio_id | uuid (FK) | → Negócio |
+| autor_id   | uuid (FK) | → Perfil, quem registrou |
+| descricao  | text      | |
+| criado_em  | timestamp | |
+
 ## Relacionamentos
 
 ```
 Perfil 1 ── N Tarefa                  (responsavel_id)
 Vendedor 1 ── N Comissão              (vendedor_id)
 Cliente de cobrança 1 ── N Parcela    (cliente_id)
+Negócio 1 ── N Cotação                (negocio_id)
+Negócio 1 ── N Atividade              (negocio_id)
+Perfil 1 ── N Atividade               (autor_id)
 ```
 
-Perfil, Vendedor e Cliente de cobrança não se relacionam entre si nesta
-fase — são cadastros de pessoas com papéis totalmente diferentes (quem
-opera o sistema, quem recebe comissão, quem é cobrado). Acesso é protegido
-por Row Level Security: só usuários autenticados (Eric e Pedro) leem e
-escrevem os dados.
+Perfil, Vendedor, Cliente de cobrança e Negócio não se relacionam entre si
+nesta fase — são cadastros de pessoas/registros com papéis totalmente
+diferentes. Acesso é protegido por Row Level Security:
+- **Comissões, Tarefas, Vendedores e CRM (negócios/cotações/atividades)**:
+  só usuários com papel `admin` (Eric e Pedro)
+- **Cobrança**: qualquer usuário autenticado, `admin` ou `cobranca`
+  (inclui a Thais)
 
 ## Fora do escopo desta fase
 
-- Entidade Cliente/Negócio unificada (CRM) — hoje comissão e cobrança têm
-  cada uma seu próprio jeito simples de registrar cliente, sem ligação com
-  o Pipedrive ainda
+- Ligar o CRM aos clientes de Comissão/Cobrança (hoje são cadastros
+  separados) — pode fazer sentido unificar numa fase futura
 - Tarefas atribuídas a vendedores/parceiros — hoje só equipe interna
-- Permissões granulares por papel — hoje todo Usuário é `admin`
+- Permissões mais granulares que admin/cobranca
 - Backup manual (exportar/importar `.json`) do protótipo — não é mais
   necessário, o banco real (Supabase) já tem backup automático

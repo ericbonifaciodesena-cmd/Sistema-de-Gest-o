@@ -97,6 +97,54 @@ create table parcelas (
 create index idx_parcelas_cliente on parcelas(cliente_id);
 create index idx_parcelas_data on parcelas(data);
 
+-- CRM: negócios (dois funis — seguro novo e renovação), com cotações em
+-- PDF e histórico de atividades por negócio. `estagio` é a etapa do
+-- funil; `status` é independente (aberto/ganho/perdido), igual ao
+-- Pipedrive — um negócio pode ser marcado ganho/perdido de qualquer
+-- etapa, sem precisar mover de coluna antes.
+create table negocios (
+    id          uuid primary key default gen_random_uuid(),
+    cliente_nome text not null,
+    contato     text,
+    tipo        text not null check (tipo in ('novo', 'renovacao')),
+    estagio     text not null,
+    status      text not null default 'aberto' check (status in ('aberto', 'ganho', 'perdido')),
+    valor       numeric(12,2),
+    criado_em   timestamptz not null default now(),
+    constraint estagio_valido check (
+        (tipo = 'novo' and estagio in ('Pedido de cotação', 'Cotação Realizada', 'Proposta Apresentada', 'Follow Up', 'Negócio Fechado'))
+        or
+        (tipo = 'renovacao' and estagio in ('Pedido de renovação', 'Renovação Realizada', 'Proposta Apresentada', 'Follow Up', 'Negócio Fechado'))
+    )
+);
+
+create index idx_negocios_tipo on negocios(tipo);
+
+create table cotacoes (
+    id            uuid primary key default gen_random_uuid(),
+    negocio_id    uuid not null references negocios(id) on delete cascade,
+    arquivo_path  text not null,
+    nome_arquivo  text not null,
+    criado_em     timestamptz not null default now()
+);
+
+create index idx_cotacoes_negocio on cotacoes(negocio_id);
+
+create table atividades (
+    id          uuid primary key default gen_random_uuid(),
+    negocio_id  uuid not null references negocios(id) on delete cascade,
+    autor_id    uuid references perfis(id),
+    descricao   text not null,
+    criado_em   timestamptz not null default now()
+);
+
+create index idx_atividades_negocio on atividades(negocio_id);
+
+-- bucket privado pra guardar os PDFs de cotação
+insert into storage.buckets (id, name, public)
+values ('cotacoes', 'cotacoes', false)
+on conflict (id) do nothing;
+
 -- RLS: comissões, tarefas e vendedores são só para `admin`. Cobrança
 -- (cliente + parcelas) é para qualquer usuário logado, admin ou
 -- `cobranca` — hoje isso é Eric, Pedro (admin) e Thais (cobranca).
@@ -124,3 +172,20 @@ create policy "equipe interna acessa cobranca_clientes" on cobranca_clientes
 
 create policy "equipe interna acessa parcelas" on parcelas
     for all using (auth.uid() is not null) with check (auth.uid() is not null);
+
+alter table negocios enable row level security;
+alter table cotacoes enable row level security;
+alter table atividades enable row level security;
+
+create policy "admin acessa negocios" on negocios
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
+
+create policy "admin acessa cotacoes" on cotacoes
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
+
+create policy "admin acessa atividades" on atividades
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
+
+create policy "admin acessa bucket cotacoes" on storage.objects
+    for all using (bucket_id = 'cotacoes' and current_papel() = 'admin')
+    with check (bucket_id = 'cotacoes' and current_papel() = 'admin');
