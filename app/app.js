@@ -2,7 +2,10 @@
   var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
   var DAY_NAMES = ["Seg.", "Ter.", "Qua.", "Qui.", "Sex."];
-  var state = { session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null };
+  var state = {
+    session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
+    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null
+  };
 
   function fmtMoney(n) {
     var neg = n < 0;
@@ -24,6 +27,16 @@
     var diff = dow === 0 ? -6 : 1 - dow;
     d.setDate(d.getDate() + diff);
     return d;
+  }
+  function addMonths(iso, n) {
+    var parts = iso.split("-").map(Number);
+    var d = new Date(parts[0], parts[1] - 1 + n, parts[2]);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function fmtDateLong(iso) {
+    var d = new Date(iso + "T00:00:00");
+    var s = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
   function weekDates() {
     var mon = mondayOfThisWeek();
@@ -109,31 +122,41 @@
   // ---- tabs ----
   var tabComissoes = document.getElementById("tab-comissoes");
   var tabTarefas = document.getElementById("tab-tarefas");
+  var tabCobrancas = document.getElementById("tab-cobrancas");
   var panelComissoes = document.getElementById("panel-comissoes");
   var panelTarefas = document.getElementById("panel-tarefas");
+  var panelCobrancas = document.getElementById("panel-cobrancas");
   function selectTab(which) {
-    var onC = which === "comissoes";
-    tabComissoes.setAttribute("aria-selected", String(onC));
-    tabTarefas.setAttribute("aria-selected", String(!onC));
-    panelComissoes.classList.toggle("active", onC);
-    panelTarefas.classList.toggle("active", !onC);
+    tabComissoes.setAttribute("aria-selected", String(which === "comissoes"));
+    tabTarefas.setAttribute("aria-selected", String(which === "tarefas"));
+    tabCobrancas.setAttribute("aria-selected", String(which === "cobrancas"));
+    panelComissoes.classList.toggle("active", which === "comissoes");
+    panelTarefas.classList.toggle("active", which === "tarefas");
+    panelCobrancas.classList.toggle("active", which === "cobrancas");
   }
   tabComissoes.addEventListener("click", function () { selectTab("comissoes"); });
   tabTarefas.addEventListener("click", function () { selectTab("tarefas"); });
+  tabCobrancas.addEventListener("click", function () { selectTab("cobrancas"); });
 
   // ---- data loading ----
   async function loadAll() {
-    var [vRes, cRes, tRes] = await Promise.all([
+    var [vRes, cRes, tRes, ccRes, pRes] = await Promise.all([
       supabase.from("vendedores").select("*"),
       supabase.from("comissoes").select("*"),
-      supabase.from("tarefas").select("*, perfis(nome)")
+      supabase.from("tarefas").select("*, perfis(nome)"),
+      supabase.from("cobranca_clientes").select("*"),
+      supabase.from("parcelas").select("*")
     ]);
     if (vRes.error) return reportError(vRes.error);
     if (cRes.error) return reportError(cRes.error);
     if (tRes.error) return reportError(tRes.error);
+    if (ccRes.error) return reportError(ccRes.error);
+    if (pRes.error) return reportError(pRes.error);
     state.vendedores = vRes.data;
     state.comissoes = cRes.data;
     state.tarefas = tRes.data;
+    state.cobrancaClientes = ccRes.data;
+    state.parcelas = pRes.data;
     renderAll();
   }
 
@@ -143,6 +166,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "vendedores" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "comissoes" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "tarefas" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cobranca_clientes" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "parcelas" }, loadAll)
       .subscribe();
   }
   function teardownSubscriptions() {
@@ -486,9 +511,298 @@
     });
   }
 
+  // ---- render: cobrancas ----
+  var cbFila = document.getElementById("cb-fila");
+  var cbAddToggle = document.getElementById("cb-add-toggle");
+  var cbNewForm = document.getElementById("cb-new-form");
+  var cbModalOverlay = document.getElementById("cb-modal-overlay");
+
+  function clienteParcelas(clienteId) {
+    return state.parcelas
+      .filter(function (p) { return p.cliente_id === clienteId; })
+      .sort(function (a, b) { return a.data.localeCompare(b.data); });
+  }
+
+  function buildFila() {
+    var items = [];
+    state.cobrancaClientes.forEach(function (c) {
+      var proxima = state.parcelas
+        .filter(function (p) { return p.cliente_id === c.id && p.status === "pendente"; })
+        .sort(function (a, b) { return a.data.localeCompare(b.data); })[0];
+      if (proxima) items.push({ cliente: c, parcela: proxima });
+    });
+    items.sort(function (a, b) { return a.parcela.data.localeCompare(b.parcela.data); });
+    return items;
+  }
+
+  function renderCobrancas() {
+    var fila = buildFila();
+    var today = todayISO();
+    var atrasados = fila.filter(function (f) { return f.parcela.data < today; });
+    var hoje = fila.filter(function (f) { return f.parcela.data === today; });
+    var totalReceber = fila.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0);
+
+    document.getElementById("cb-stat-atrasados-n").textContent = atrasados.length;
+    document.getElementById("cb-stat-atrasados-v").textContent = fmtMoney(atrasados.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0));
+    document.getElementById("cb-stat-hoje-n").textContent = hoje.length;
+    document.getElementById("cb-stat-hoje-v").textContent = fmtMoney(hoje.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0));
+    document.getElementById("cb-stat-total").textContent = fmtMoney(totalReceber);
+
+    var grupos = [];
+    fila.forEach(function (item) {
+      var last = grupos[grupos.length - 1];
+      if (last && last.data === item.parcela.data) last.itens.push(item);
+      else grupos.push({ data: item.parcela.data, itens: [item] });
+    });
+
+    cbFila.innerHTML = "";
+    if (!grupos.length) {
+      var empty = document.createElement("div");
+      empty.className = "cb-empty";
+      empty.textContent = "Nenhuma cobrança pendente.";
+      cbFila.appendChild(empty);
+      return;
+    }
+
+    grupos.forEach(function (g) {
+      var group = document.createElement("div");
+      group.className = "cb-group";
+
+      var head = document.createElement("div");
+      head.className = "cb-group-head";
+      var dateEl = document.createElement("span");
+      dateEl.className = "cb-group-date" + (g.data < today ? " overdue" : "");
+      dateEl.textContent = fmtDateLong(g.data);
+      var countEl = document.createElement("span");
+      countEl.className = "cb-group-count";
+      countEl.textContent = g.itens.length;
+      head.appendChild(dateEl);
+      head.appendChild(countEl);
+      group.appendChild(head);
+
+      g.itens.forEach(function (item) { group.appendChild(renderCbRow(item.cliente, item.parcela)); });
+      cbFila.appendChild(group);
+    });
+  }
+
+  function renderCbRow(cliente, parcela) {
+    var row = document.createElement("div");
+    row.className = "cb-row";
+
+    var nameWrap = document.createElement("div");
+    nameWrap.className = "cb-row-name";
+    var nameBtn = document.createElement("button");
+    nameBtn.className = "cb-name-btn";
+    nameBtn.textContent = cliente.nome;
+    nameBtn.addEventListener("click", function () { openCbModal(cliente.id); });
+    var meta = document.createElement("div");
+    meta.className = "cb-row-meta";
+    var totalParcelas = state.parcelas.filter(function (p) { return p.cliente_id === cliente.id; }).length;
+    meta.textContent = cliente.forma + " · parcela " + parcela.numero + " de " + totalParcelas;
+    nameWrap.appendChild(nameBtn);
+    nameWrap.appendChild(meta);
+    row.appendChild(nameWrap);
+
+    if (state.cbEditingParcelaId === parcela.id) {
+      var editWrap = document.createElement("div");
+      editWrap.className = "cb-date-edit";
+      var dateInput = document.createElement("input");
+      dateInput.type = "date";
+      dateInput.value = parcela.data;
+      var okBtn = document.createElement("button");
+      okBtn.className = "icon-btn";
+      okBtn.textContent = "✓";
+      okBtn.addEventListener("click", async function () {
+        var res = await supabase.from("parcelas").update({ data: dateInput.value }).eq("id", parcela.id);
+        state.cbEditingParcelaId = null;
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      var cancelBtn = document.createElement("button");
+      cancelBtn.className = "icon-btn";
+      cancelBtn.textContent = "✕";
+      cancelBtn.addEventListener("click", function () { state.cbEditingParcelaId = null; renderCobrancas(); });
+      editWrap.appendChild(dateInput);
+      editWrap.appendChild(okBtn);
+      editWrap.appendChild(cancelBtn);
+      row.appendChild(editWrap);
+    } else {
+      var valEl = document.createElement("div");
+      valEl.className = "cb-row-value tabular";
+      valEl.textContent = fmtMoney(Number(parcela.valor));
+      row.appendChild(valEl);
+
+      var editBtn = document.createElement("button");
+      editBtn.className = "icon-btn";
+      editBtn.title = "Reagendar data";
+      editBtn.textContent = "✎";
+      editBtn.addEventListener("click", function () { state.cbEditingParcelaId = parcela.id; renderCobrancas(); });
+      row.appendChild(editBtn);
+
+      var payBtn = document.createElement("button");
+      payBtn.className = "btn small";
+      payBtn.textContent = "Cobrado e pago";
+      payBtn.addEventListener("click", async function () {
+        var res = await supabase.from("parcelas").update({ status: "paga", data_pagamento: todayISO() }).eq("id", parcela.id);
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      row.appendChild(payBtn);
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.title = "Remover cliente";
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", async function () {
+        if (!confirm('Remover "' + cliente.nome + '" e todas as parcelas dele?')) return;
+        var res = await supabase.from("cobranca_clientes").delete().eq("id", cliente.id);
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      row.appendChild(delBtn);
+    }
+
+    return row;
+  }
+
+  cbAddToggle.addEventListener("click", function () {
+    cbNewForm.hidden = !cbNewForm.hidden;
+  });
+  document.getElementById("cb-add-cancel").addEventListener("click", function () { cbNewForm.hidden = true; });
+  document.querySelectorAll(".cb-forma-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      state.cbForma = chip.getAttribute("data-forma");
+      document.querySelectorAll(".cb-forma-chip").forEach(function (c) { c.classList.toggle("is-on", c === chip); });
+    });
+  });
+  document.getElementById("cb-add-confirm").addEventListener("click", async function () {
+    var nome = document.getElementById("cb-nome").value.trim();
+    var valor = parseFloat(document.getElementById("cb-valor").value);
+    var dataIni = document.getElementById("cb-data").value;
+    var numParcelas = parseInt(document.getElementById("cb-parcelas").value, 10);
+    if (!nome || isNaN(valor) || !dataIni || !numParcelas || numParcelas < 1) return;
+
+    var clienteRes = await supabase.from("cobranca_clientes").insert({ nome: nome, forma: state.cbForma }).select().single();
+    if (clienteRes.error) return reportError(clienteRes.error);
+
+    var parcelasRows = [];
+    for (var i = 0; i < numParcelas; i++) {
+      parcelasRows.push({
+        cliente_id: clienteRes.data.id,
+        numero: i + 1,
+        valor: valor,
+        data: addMonths(dataIni, i),
+        status: "pendente"
+      });
+    }
+    var pRes = await supabase.from("parcelas").insert(parcelasRows);
+    if (pRes.error) return reportError(pRes.error);
+
+    document.getElementById("cb-nome").value = "";
+    document.getElementById("cb-valor").value = "";
+    document.getElementById("cb-parcelas").value = "12";
+    cbNewForm.hidden = true;
+    loadAll();
+  });
+
+  function openCbModal(clienteId) {
+    state.cbModalClienteId = clienteId;
+    renderCbModal();
+    cbModalOverlay.hidden = false;
+  }
+  function closeCbModal() {
+    cbModalOverlay.hidden = true;
+    state.cbModalClienteId = null;
+    state.cbEditingParcelaId = null;
+  }
+  document.getElementById("cb-modal-close").addEventListener("click", closeCbModal);
+  cbModalOverlay.addEventListener("click", function (ev) { if (ev.target === cbModalOverlay) closeCbModal(); });
+
+  var cbModalObs = document.getElementById("cb-modal-obs");
+  cbModalObs.addEventListener("blur", async function () {
+    if (!state.cbModalClienteId) return;
+    await supabase.from("cobranca_clientes").update({ observacoes: cbModalObs.value }).eq("id", state.cbModalClienteId);
+  });
+
+  function renderCbModal() {
+    var cliente = state.cobrancaClientes.find(function (c) { return c.id === state.cbModalClienteId; });
+    if (!cliente) return;
+    document.getElementById("cb-modal-nome").textContent = cliente.nome;
+    document.getElementById("cb-modal-forma").textContent = cliente.forma;
+    cbModalObs.value = cliente.observacoes || "";
+
+    var wrap = document.getElementById("cb-modal-parcelas");
+    wrap.innerHTML = "";
+    clienteParcelas(cliente.id).forEach(function (p) {
+      var row = document.createElement("div");
+      row.className = "cb-parcela-row";
+
+      var num = document.createElement("span");
+      num.className = "cb-parcela-num";
+      num.textContent = p.numero;
+      row.appendChild(num);
+
+      if (state.cbEditingParcelaId === p.id) {
+        var editWrap = document.createElement("div");
+        editWrap.className = "cb-date-edit";
+        var dateInput = document.createElement("input");
+        dateInput.type = "date";
+        dateInput.value = p.data;
+        var okBtn = document.createElement("button");
+        okBtn.className = "icon-btn";
+        okBtn.textContent = "✓";
+        okBtn.addEventListener("click", async function () {
+          var res = await supabase.from("parcelas").update({ data: dateInput.value }).eq("id", p.id);
+          state.cbEditingParcelaId = null;
+          if (res.error) reportError(res.error); else loadAll();
+        });
+        var cancelBtn = document.createElement("button");
+        cancelBtn.className = "icon-btn";
+        cancelBtn.textContent = "✕";
+        cancelBtn.addEventListener("click", function () { state.cbEditingParcelaId = null; renderCbModal(); });
+        editWrap.appendChild(dateInput);
+        editWrap.appendChild(okBtn);
+        editWrap.appendChild(cancelBtn);
+        row.appendChild(editWrap);
+      } else {
+        var dateEl = document.createElement("span");
+        dateEl.className = "cb-parcela-date";
+        dateEl.textContent = fmtDate(p.data) + (p.status === "paga" && p.data_pagamento ? " · pago " + fmtDate(p.data_pagamento) : "");
+        if (p.status === "pendente") {
+          var editBtn = document.createElement("button");
+          editBtn.className = "icon-btn";
+          editBtn.textContent = "✎";
+          editBtn.title = "Reagendar";
+          editBtn.style.marginLeft = "4px";
+          editBtn.addEventListener("click", function () { state.cbEditingParcelaId = p.id; renderCbModal(); });
+          dateEl.appendChild(editBtn);
+        }
+        row.appendChild(dateEl);
+      }
+
+      var val = document.createElement("span");
+      val.className = "cb-parcela-value tabular";
+      val.textContent = fmtMoney(Number(p.valor));
+      row.appendChild(val);
+
+      var statusBtn = document.createElement("button");
+      statusBtn.className = "chip" + (p.status === "paga" ? " is-on" : "");
+      statusBtn.textContent = p.status === "paga" ? "Paga" : "Pendente";
+      statusBtn.addEventListener("click", async function () {
+        var patch = p.status === "pendente"
+          ? { status: "paga", data_pagamento: todayISO() }
+          : { status: "pendente", data_pagamento: null };
+        var res = await supabase.from("parcelas").update(patch).eq("id", p.id);
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      row.appendChild(statusBtn);
+
+      wrap.appendChild(row);
+    });
+  }
+
   function renderAll() {
     renderVendors();
     renderWeek();
     if (showingHistory) renderHistory();
+    renderCobrancas();
+    if (state.cbModalClienteId) renderCbModal();
   }
 })();

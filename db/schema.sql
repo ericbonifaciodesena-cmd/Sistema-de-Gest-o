@@ -61,6 +61,31 @@ create table tarefas (
 create index idx_tarefas_responsavel on tarefas(responsavel_id);
 create index idx_tarefas_data on tarefas(data);
 
+-- Cobrança: cliente que paga em parcelas (boleto/pix), com parcelas
+-- geradas mensalmente. Reagendar só edita a data da parcela, nunca
+-- cria uma nova.
+create table cobranca_clientes (
+    id            uuid primary key default gen_random_uuid(),
+    nome          text not null,
+    forma         text not null default 'Boleto' check (forma in ('Boleto', 'Pix')),
+    observacoes   text not null default '',
+    criado_em     timestamptz not null default now()
+);
+
+create table parcelas (
+    id              uuid primary key default gen_random_uuid(),
+    cliente_id      uuid not null references cobranca_clientes(id) on delete cascade,
+    numero          int not null,
+    valor           numeric(12,2) not null,
+    data            date not null,
+    status          text not null default 'pendente' check (status in ('pendente', 'paga')),
+    data_pagamento  date,
+    criado_em       timestamptz not null default now()
+);
+
+create index idx_parcelas_cliente on parcelas(cliente_id);
+create index idx_parcelas_data on parcelas(data);
+
 -- RLS: só quem está logado (equipe interna) lê e escreve.
 -- Sem login real por enquanto, o acesso é "qualquer usuário autenticado",
 -- já que só Eric e Pedro terão conta.
@@ -68,6 +93,8 @@ alter table perfis enable row level security;
 alter table vendedores enable row level security;
 alter table comissoes enable row level security;
 alter table tarefas enable row level security;
+alter table cobranca_clientes enable row level security;
+alter table parcelas enable row level security;
 
 create policy "equipe interna le perfis" on perfis
     for select using (auth.uid() is not null);
@@ -79,4 +106,10 @@ create policy "equipe interna acessa comissoes" on comissoes
     for all using (auth.uid() is not null) with check (auth.uid() is not null);
 
 create policy "equipe interna acessa tarefas" on tarefas
+    for all using (auth.uid() is not null) with check (auth.uid() is not null);
+
+create policy "equipe interna acessa cobranca_clientes" on cobranca_clientes
+    for all using (auth.uid() is not null) with check (auth.uid() is not null);
+
+create policy "equipe interna acessa parcelas" on parcelas
     for all using (auth.uid() is not null) with check (auth.uid() is not null);

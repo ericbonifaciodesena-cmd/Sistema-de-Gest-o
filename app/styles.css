@@ -154,3 +154,75 @@ table.history tr:last-child td { border-bottom: none; }
 
 @media (max-width: 860px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .week-grid { grid-template-columns: 1fr; } .new-row { grid-template-columns: 1fr; } }
+
+/* cobrancas */
+.cb-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+.cb-stat { background: var(--surface-2); border-radius: 12px; padding: 14px 16px; }
+.cb-stat-value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.cb-stat-sub { font-size: 12px; opacity: 0.8; margin-top: 3px; }
+.cb-stat-label { font-size: 11.5px; color: var(--muted); margin-top: 5px; font-weight: 500; }
+.cb-stat-bad .cb-stat-value, .cb-stat-bad .cb-stat-sub { color: var(--bad); }
+.cb-stat-bad { background: var(--bad-weak); }
+.cb-stat-accent .cb-stat-value { color: var(--accent); }
+.cb-stat-accent { background: var(--accent-weak); }
+
+.cb-empty { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 20px; text-align: center; color: var(--muted); }
+
+.cb-group { margin-bottom: 20px; }
+.cb-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.cb-group-date { font-weight: 700; font-size: 14px; text-transform: capitalize; }
+.cb-group-date.overdue { color: var(--bad); }
+.cb-group-count { font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 999px; }
+
+.cb-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); flex-wrap: wrap;
+}
+.cb-row-name { flex: 1; min-width: 140px; }
+.cb-name-btn { background: none; border: none; padding: 0; font-family: inherit; font-size: 14.5px; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+.cb-name-btn:hover { color: var(--accent); }
+.cb-row-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.cb-row-value { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.cb-date-edit { display: flex; align-items: center; gap: 6px; }
+.cb-date-edit input { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); }
+
+.cb-new-wrap { margin-top: 22px; }
+.cb-new-form {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 18px; max-width: 380px; display: flex; flex-direction: column; gap: 10px;
+}
+.cb-input {
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-family: inherit;
+  font-size: 13px; color: var(--ink); padding: 8px 10px; width: 100%;
+}
+textarea.cb-input { resize: vertical; font-family: inherit; }
+.cb-label { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+.cb-forma-row { display: flex; gap: 8px; }
+.chip {
+  border: none; font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 12px;
+  border-radius: 999px; cursor: pointer; background: var(--surface-2); color: var(--muted);
+}
+.chip.is-on { background: var(--ink); color: var(--surface); }
+.cb-new-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+.cb-modal-overlay {
+  position: fixed; inset: 0; background: rgba(5,22,37,0.5); display: flex; align-items: center;
+  justify-content: center; padding: 20px; z-index: 50;
+}
+.cb-modal {
+  background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 22px;
+  max-width: 460px; width: 100%; max-height: 85vh; overflow-y: auto;
+}
+.cb-modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.cb-modal-head h2 { margin: 0; font-size: 18px; }
+.cb-parcela-row {
+  display: grid; grid-template-columns: 22px minmax(0,1fr) auto auto; align-items: center; gap: 10px;
+  padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.cb-parcela-row:last-child { border-bottom: none; }
+.cb-parcela-num { color: var(--muted); }
+.cb-parcela-date { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cb-parcela-value { font-weight: 600; white-space: nowrap; }
+
+@media (max-width: 640px) { .cb-stats { grid-template-columns: 1fr; } }

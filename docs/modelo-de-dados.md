@@ -1,8 +1,10 @@
-# Modelo de dados — Comissões e Tarefas
+# Modelo de dados — Comissões, Tarefas e Cobrança
 
-Escopo desta fase: apenas **comissões** e **tarefas**. O CRM (clientes/negócios
-vindos do Pipedrive) entra em uma fase futura — por enquanto o cliente é só
-um campo de texto dentro da comissão, igual ao protótipo e à planilha atual.
+Escopo desta fase: **comissões**, **tarefas** e **cobrança**. O CRM
+(clientes/negócios vindos do Pipedrive) entra em uma fase futura — por
+enquanto o cliente da comissão é só um campo de texto, e o cliente de
+cobrança é um cadastro próprio, simples, sem ligação com o Pipedrive
+ainda.
 
 ## Entidades
 
@@ -67,21 +69,61 @@ abaixo, e o histórico é a mesma tabela filtrada por `arquivada = true`.
 | arquivada_em  | timestamp | nulo até ser arquivada |
 | criado_em     | timestamp | |
 
+### Cliente de cobrança
+Cliente que paga em parcelas (boleto ou pix). Cadastro simples e próprio
+dessa área — não é o mesmo cadastro de Vendedor nem depende do CRM.
+
+| Campo       | Tipo | Observação |
+|-------------|------|------------|
+| id          | uuid | chave primária |
+| nome        | text | |
+| forma       | text | `Boleto` \| `Pix` |
+| observacoes | text | texto livre, editável a qualquer momento |
+| criado_em   | timestamp | |
+
+### Parcela
+Uma parcela de um cliente de cobrança. Todas as parcelas de um cliente são
+geradas de uma vez (mensal, mesmo dia do mês, a partir da data inicial) ao
+cadastrar o cliente — não há criação de parcela nova depois disso.
+**Reagendar** (ex: cliente não pagou, novo boleto sai numa data diferente)
+só edita o campo `data` da parcela existente, nunca cria outra.
+
+| Campo          | Tipo          | Observação |
+|----------------|---------------|------------|
+| id             | uuid          | chave primária |
+| cliente_id     | uuid (FK)     | → Cliente de cobrança |
+| numero         | int           | 1, 2, 3... |
+| valor          | numeric(12,2) | |
+| data           | date          | vencimento (editável = reagendamento) |
+| status         | text          | `pendente` \| `paga` |
+| data_pagamento | date          | preenchida ao marcar como paga |
+| criado_em      | timestamp     | |
+
+A fila de cobrança (quem cobrar, ordenado por vencimento) é uma consulta:
+para cada cliente, a parcela `pendente` de menor data. Marcar "cobrado e
+pago" só muda o status dessa parcela — a próxima parcela pendente (já
+existe, criada junto com as outras) aparece sozinha na fila depois.
+
 ## Relacionamentos
 
 ```
-Perfil 1 ── N Tarefa           (responsavel_id)
-Vendedor 1 ── N Comissão       (vendedor_id)
+Perfil 1 ── N Tarefa                  (responsavel_id)
+Vendedor 1 ── N Comissão              (vendedor_id)
+Cliente de cobrança 1 ── N Parcela    (cliente_id)
 ```
 
-Perfil e Vendedor não se relacionam diretamente nesta fase — são dois
-cadastros de pessoas com papéis totalmente diferentes (quem opera o sistema
-vs. quem recebe comissão). Acesso é protegido por Row Level Security: só
-usuários autenticados (Eric e Pedro) leem e escrevem os dados.
+Perfil, Vendedor e Cliente de cobrança não se relacionam entre si nesta
+fase — são cadastros de pessoas com papéis totalmente diferentes (quem
+opera o sistema, quem recebe comissão, quem é cobrado). Acesso é protegido
+por Row Level Security: só usuários autenticados (Eric e Pedro) leem e
+escrevem os dados.
 
 ## Fora do escopo desta fase
 
-- Entidade Cliente/Negócio (CRM) — `cliente_nome` fica como texto até a
-  integração com o Pipedrive
+- Entidade Cliente/Negócio unificada (CRM) — hoje comissão e cobrança têm
+  cada uma seu próprio jeito simples de registrar cliente, sem ligação com
+  o Pipedrive ainda
 - Tarefas atribuídas a vendedores/parceiros — hoje só equipe interna
 - Permissões granulares por papel — hoje todo Usuário é `admin`
+- Backup manual (exportar/importar `.json`) do protótipo — não é mais
+  necessário, o banco real (Supabase) já tem backup automático
