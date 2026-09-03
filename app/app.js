@@ -112,6 +112,11 @@
   supabase.auth.onAuthStateChange(function (event, session) {
     state.session = session;
     if (session) {
+      // Trocar de aba do navegador e voltar dispara TOKEN_REFRESHED (a lib
+      // renova o token sozinha) — isso não é um login novo, então não pode
+      // recarregar a tela nem voltar pra aba padrão, senão apaga o que a
+      // pessoa estava digitando. Só reinicia a UI em login de verdade.
+      if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return;
       // Adiado: consultar o banco direto aqui trava a sincronização do
       // token de sessão do supabase-js (a lib ainda está com um lock
       // interno de auth durante esse callback).
