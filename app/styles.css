@@ -187,7 +187,7 @@ table.history tr:last-child td { border-bottom: none; }
 .cb-date-edit { display: flex; align-items: center; gap: 6px; }
 .cb-date-edit input { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); }
 
-.cb-new-wrap { margin-top: 22px; }
+.cb-new-wrap { margin-bottom: 22px; }
 .cb-new-form {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: var(--shadow); padding: 18px; max-width: 380px; display: flex; flex-direction: column; gap: 10px;
