@@ -8,6 +8,16 @@
     novaTarefaDrafts: {}
   };
 
+  function safeStorageGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function safeStorageSet(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  }
+  function safeStorageRemove(key) {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+
   function fmtMoney(n) {
     var neg = n < 0;
     var v = Math.abs(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -147,7 +157,9 @@
     var isAdmin = state.perfil.papel === "admin";
     tabComissoes.hidden = !isAdmin;
     tabTarefas.hidden = !isAdmin;
-    if (!isAdmin) selectTab("cobrancas"); else selectTab("comissoes");
+    var lembrada = safeStorageGet("abaAtiva");
+    var valida = isAdmin ? ["comissoes", "tarefas", "cobrancas"] : ["cobrancas"];
+    selectTab(valida.indexOf(lembrada) !== -1 ? lembrada : valida[0]);
   }
 
   // ---- tabs ----
@@ -164,6 +176,7 @@
     panelComissoes.classList.toggle("active", which === "comissoes");
     panelTarefas.classList.toggle("active", which === "tarefas");
     panelCobrancas.classList.toggle("active", which === "cobrancas");
+    safeStorageSet("abaAtiva", which);
   }
   tabComissoes.addEventListener("click", function () { selectTab("comissoes"); });
   tabTarefas.addEventListener("click", function () { selectTab("tarefas"); });
@@ -496,12 +509,15 @@
     addWrap.className = "day-add";
     var input = document.createElement("input");
     input.placeholder = "+ nova tarefa";
-    // Qualquer atualização no banco (mesmo de outra pessoa, em qualquer
-    // aba) recria esse input do zero — guardamos o que foi digitado à
-    // parte pra não perder o texto quando isso acontece no meio da digitação.
-    input.value = state.novaTarefaDrafts[iso] || "";
+    // Guardamos o rascunho no localStorage (não só na memória) porque o
+    // Chrome pode descarregar a aba da memória e recarregar a página do
+    // zero quando você volta pra ela depois de um tempo em outra aba —
+    // isso apaga qualquer estado só em JS, mas localStorage sobrevive.
+    var draftKey = "novaTarefaDraft:" + iso;
+    input.value = state.novaTarefaDrafts[iso] || safeStorageGet(draftKey) || "";
     input.addEventListener("input", function () {
       state.novaTarefaDrafts[iso] = input.value;
+      safeStorageSet(draftKey, input.value);
     });
     input.addEventListener("keydown", async function (ev) {
       if (ev.key !== "Enter") return;
@@ -516,6 +532,7 @@
       });
       if (res.error) return reportError(res.error);
       delete state.novaTarefaDrafts[iso];
+      safeStorageRemove(draftKey);
       input.value = "";
       loadAll();
     });
