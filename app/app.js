@@ -4,7 +4,8 @@
   var DAY_NAMES = ["Seg.", "Ter.", "Qua.", "Qui.", "Sex."];
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
-    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null
+    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null,
+    novaTarefaDrafts: {}
   };
 
   function fmtMoney(n) {
@@ -495,6 +496,13 @@
     addWrap.className = "day-add";
     var input = document.createElement("input");
     input.placeholder = "+ nova tarefa";
+    // Qualquer atualização no banco (mesmo de outra pessoa, em qualquer
+    // aba) recria esse input do zero — guardamos o que foi digitado à
+    // parte pra não perder o texto quando isso acontece no meio da digitação.
+    input.value = state.novaTarefaDrafts[iso] || "";
+    input.addEventListener("input", function () {
+      state.novaTarefaDrafts[iso] = input.value;
+    });
     input.addEventListener("keydown", async function (ev) {
       if (ev.key !== "Enter") return;
       var desc = input.value.trim();
@@ -507,6 +515,7 @@
         arquivada: false
       });
       if (res.error) return reportError(res.error);
+      delete state.novaTarefaDrafts[iso];
       input.value = "";
       loadAll();
     });
@@ -756,7 +765,7 @@
     if (!cliente) return;
     document.getElementById("cb-modal-nome").textContent = cliente.nome;
     document.getElementById("cb-modal-forma").textContent = cliente.forma;
-    cbModalObs.value = cliente.observacoes || "";
+    if (document.activeElement !== cbModalObs) cbModalObs.value = cliente.observacoes || "";
 
     var wrap = document.getElementById("cb-modal-parcelas");
     wrap.innerHTML = "";
