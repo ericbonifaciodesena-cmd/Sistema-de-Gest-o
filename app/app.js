@@ -57,6 +57,24 @@
     }
   });
 
+  document.getElementById("forgot-link").addEventListener("click", async function (ev) {
+    ev.preventDefault();
+    var email = document.getElementById("login-email").value.trim();
+    if (!email) {
+      loginError.textContent = "Digite seu e-mail no campo acima primeiro.";
+      return;
+    }
+    loginError.textContent = "";
+    var redirectTo = window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "reset-password.html";
+    var res = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectTo });
+    if (res.error) {
+      loginError.textContent = "Erro ao enviar: " + res.error.message;
+    } else {
+      loginError.style.color = "var(--good)";
+      loginError.textContent = "Link enviado! Confere seu e-mail.";
+    }
+  });
+
   document.getElementById("logout-btn").addEventListener("click", async function () {
     await supabase.auth.signOut();
   });
