@@ -64,7 +64,10 @@
   supabase.auth.onAuthStateChange(function (event, session) {
     state.session = session;
     if (session) {
-      showApp();
+      // Adiado: consultar o banco direto aqui trava a sincronização do
+      // token de sessão do supabase-js (a lib ainda está com um lock
+      // interno de auth durante esse callback).
+      setTimeout(function () { showApp(); }, 0);
     } else {
       loginWrap.hidden = false;
       appWrap.hidden = true;
