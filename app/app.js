@@ -163,8 +163,9 @@
     tabComissoes.hidden = !isAdmin;
     tabTarefas.hidden = !isAdmin;
     tabCrm.hidden = !isAdmin;
+    tabConversor.hidden = !isAdmin;
     var lembrada = safeStorageGet("abaAtiva");
-    var valida = isAdmin ? ["comissoes", "tarefas", "cobrancas", "crm"] : ["cobrancas"];
+    var valida = isAdmin ? ["comissoes", "tarefas", "cobrancas", "crm", "conversor"] : ["cobrancas"];
     selectTab(valida.indexOf(lembrada) !== -1 ? lembrada : valida[0]);
   }
 
@@ -173,25 +174,30 @@
   var tabTarefas = document.getElementById("tab-tarefas");
   var tabCobrancas = document.getElementById("tab-cobrancas");
   var tabCrm = document.getElementById("tab-crm");
+  var tabConversor = document.getElementById("tab-conversor");
   var panelComissoes = document.getElementById("panel-comissoes");
   var panelTarefas = document.getElementById("panel-tarefas");
   var panelCobrancas = document.getElementById("panel-cobrancas");
   var panelCrm = document.getElementById("panel-crm");
+  var panelConversor = document.getElementById("panel-conversor");
   function selectTab(which) {
     tabComissoes.setAttribute("aria-selected", String(which === "comissoes"));
     tabTarefas.setAttribute("aria-selected", String(which === "tarefas"));
     tabCobrancas.setAttribute("aria-selected", String(which === "cobrancas"));
     tabCrm.setAttribute("aria-selected", String(which === "crm"));
+    tabConversor.setAttribute("aria-selected", String(which === "conversor"));
     panelComissoes.classList.toggle("active", which === "comissoes");
     panelTarefas.classList.toggle("active", which === "tarefas");
     panelCobrancas.classList.toggle("active", which === "cobrancas");
     panelCrm.classList.toggle("active", which === "crm");
+    panelConversor.classList.toggle("active", which === "conversor");
     safeStorageSet("abaAtiva", which);
   }
   tabComissoes.addEventListener("click", function () { selectTab("comissoes"); });
   tabTarefas.addEventListener("click", function () { selectTab("tarefas"); });
   tabCobrancas.addEventListener("click", function () { selectTab("cobrancas"); });
   tabCrm.addEventListener("click", function () { selectTab("crm"); });
+  tabConversor.addEventListener("click", function () { selectTab("conversor"); });
 
   // ---- data loading ----
   async function loadAll() {
