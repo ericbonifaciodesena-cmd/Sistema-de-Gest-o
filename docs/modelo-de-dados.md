@@ -78,7 +78,15 @@ dessa área — não é o mesmo cadastro de Vendedor nem depende do CRM.
 | nome        | text | |
 | forma       | text | `Boleto` \| `Pix` |
 | observacoes | text | texto livre, editável a qualquer momento |
+| seguradora  | text | opcional — Porto, Yelum, Tokio, Allianz, HDI, Zurich, Bradesco, Mapfre, Suhai ou Allseg |
+| cpf         | text | opcional |
+| corretor    | text | opcional — `Eric` \| `Sena` |
 | criado_em   | timestamp | |
+
+`seguradora`, `cpf` e `corretor` foram adicionados depois que o sistema já
+estava em uso — por isso são opcionais (aceitam vazio/nulo). Clientes
+cadastrados antes disso aparecem no app como "não informado" nesses campos
+até alguém preencher.
 
 ### Parcela
 Uma parcela de um cliente de cobrança. Todas as parcelas de um cliente são

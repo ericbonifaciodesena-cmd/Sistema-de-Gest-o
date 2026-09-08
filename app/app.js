@@ -8,7 +8,7 @@
   };
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
-    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null,
+    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "",
     novaTarefaDrafts: {},
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null
   };
@@ -627,8 +627,13 @@
     document.getElementById("cb-stat-hoje-v").textContent = fmtMoney(hoje.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0));
     document.getElementById("cb-stat-total").textContent = fmtMoney(totalReceber);
 
+    var termo = (state.cbSearchTerm || "").trim().toLowerCase();
+    var filaFiltrada = termo
+      ? fila.filter(function (f) { return f.cliente.nome.toLowerCase().indexOf(termo) !== -1; })
+      : fila;
+
     var grupos = [];
-    fila.forEach(function (item) {
+    filaFiltrada.forEach(function (item) {
       var last = grupos[grupos.length - 1];
       if (last && last.data === item.parcela.data) last.itens.push(item);
       else grupos.push({ data: item.parcela.data, itens: [item] });
@@ -638,7 +643,7 @@
     if (!grupos.length) {
       var empty = document.createElement("div");
       empty.className = "cb-empty";
-      empty.textContent = "Nenhuma cobrança pendente.";
+      empty.textContent = termo ? "Nenhum cliente encontrado para \"" + state.cbSearchTerm.trim() + "\"." : "Nenhuma cobrança pendente.";
       cbFila.appendChild(empty);
       return;
     }
@@ -741,6 +746,11 @@
     return row;
   }
 
+  document.getElementById("cb-search").addEventListener("input", function (ev) {
+    state.cbSearchTerm = ev.target.value;
+    renderCobrancas();
+  });
+
   cbAddToggle.addEventListener("click", function () {
     cbNewForm.hidden = !cbNewForm.hidden;
   });
@@ -758,7 +768,16 @@
     var numParcelas = parseInt(document.getElementById("cb-parcelas").value, 10);
     if (!nome || isNaN(valor) || !dataIni || !numParcelas || numParcelas < 1) return;
 
-    var clienteRes = await supabase.from("cobranca_clientes").insert({ nome: nome, forma: state.cbForma }).select().single();
+    var seguradora = document.getElementById("cb-seguradora").value;
+    var cpf = document.getElementById("cb-cpf").value.trim();
+    var corretor = document.getElementById("cb-corretor").value;
+    var clienteRes = await supabase.from("cobranca_clientes").insert({
+      nome: nome,
+      forma: state.cbForma,
+      seguradora: seguradora || null,
+      cpf: cpf || null,
+      corretor: corretor || null
+    }).select().single();
     if (clienteRes.error) return reportError(clienteRes.error);
 
     var parcelasRows = [];
@@ -777,6 +796,9 @@
     document.getElementById("cb-nome").value = "";
     document.getElementById("cb-valor").value = "";
     document.getElementById("cb-parcelas").value = "12";
+    document.getElementById("cb-seguradora").value = "";
+    document.getElementById("cb-cpf").value = "";
+    document.getElementById("cb-corretor").value = "";
     cbNewForm.hidden = true;
     loadAll();
   });
@@ -800,12 +822,31 @@
     await supabase.from("cobranca_clientes").update({ observacoes: cbModalObs.value }).eq("id", state.cbModalClienteId);
   });
 
+  function cbBindClienteField(elId, campo, eventName) {
+    var el = document.getElementById(elId);
+    el.addEventListener(eventName, async function () {
+      if (!state.cbModalClienteId) return;
+      var v = el.value.trim ? el.value.trim() : el.value;
+      var res = await supabase.from("cobranca_clientes").update(
+        Object.fromEntries([[campo, v || null]])
+      ).eq("id", state.cbModalClienteId);
+      if (res.error) reportError(res.error); else loadAll();
+    });
+    return el;
+  }
+  var cbModalSeguradora = cbBindClienteField("cb-modal-seguradora", "seguradora", "change");
+  var cbModalCpf = cbBindClienteField("cb-modal-cpf", "cpf", "blur");
+  var cbModalCorretor = cbBindClienteField("cb-modal-corretor", "corretor", "change");
+
   function renderCbModal() {
     var cliente = state.cobrancaClientes.find(function (c) { return c.id === state.cbModalClienteId; });
     if (!cliente) return;
     document.getElementById("cb-modal-nome").textContent = cliente.nome;
     document.getElementById("cb-modal-forma").textContent = cliente.forma;
     if (document.activeElement !== cbModalObs) cbModalObs.value = cliente.observacoes || "";
+    cbModalSeguradora.value = cliente.seguradora || "";
+    if (document.activeElement !== cbModalCpf) cbModalCpf.value = cliente.cpf || "";
+    cbModalCorretor.value = cliente.corretor || "";
 
     var wrap = document.getElementById("cb-modal-parcelas");
     wrap.innerHTML = "";

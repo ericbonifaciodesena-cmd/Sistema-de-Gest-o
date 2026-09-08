@@ -80,6 +80,9 @@ create table cobranca_clientes (
     nome          text not null,
     forma         text not null default 'Boleto' check (forma in ('Boleto', 'Pix')),
     observacoes   text not null default '',
+    seguradora    text check (seguradora in ('Porto', 'Yelum', 'Tokio', 'Allianz', 'HDI', 'Zurich', 'Bradesco', 'Mapfre', 'Suhai', 'Allseg')),
+    cpf           text,
+    corretor      text check (corretor in ('Eric', 'Sena')),
     criado_em     timestamptz not null default now()
 );
 

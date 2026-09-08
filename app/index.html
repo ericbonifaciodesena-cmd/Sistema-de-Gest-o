@@ -93,6 +93,10 @@
         </div>
       </div>
 
+      <div class="cb-search-wrap">
+        <input id="cb-search" class="cb-input" placeholder="Buscar cliente pelo nome...">
+      </div>
+
       <div class="cb-new-wrap">
         <button class="btn ghost" id="cb-add-toggle">+ novo cliente</button>
         <div class="cb-new-form" id="cb-new-form" hidden>
@@ -107,6 +111,28 @@
           <input id="cb-data" class="cb-input" type="date">
           <label class="cb-label">Número de parcelas</label>
           <input id="cb-parcelas" class="cb-input" type="number" value="12">
+          <label class="cb-label">Seguradora</label>
+          <select id="cb-seguradora" class="cb-input">
+            <option value="">não informado</option>
+            <option>Porto</option>
+            <option>Yelum</option>
+            <option>Tokio</option>
+            <option>Allianz</option>
+            <option>HDI</option>
+            <option>Zurich</option>
+            <option>Bradesco</option>
+            <option>Mapfre</option>
+            <option>Suhai</option>
+            <option>Allseg</option>
+          </select>
+          <label class="cb-label">CPF</label>
+          <input id="cb-cpf" class="cb-input" placeholder="opcional">
+          <label class="cb-label">Corretor</label>
+          <select id="cb-corretor" class="cb-input">
+            <option value="">não informado</option>
+            <option>Eric</option>
+            <option>Sena</option>
+          </select>
           <div class="cb-new-actions">
             <button class="btn small" id="cb-add-confirm">Adicionar cliente</button>
             <button class="btn ghost small" id="cb-add-cancel">Cancelar</button>
@@ -212,6 +238,36 @@
         <button class="icon-btn" id="cb-modal-close">✕</button>
       </div>
       <div id="cb-modal-parcelas"></div>
+
+      <div class="crm-field-row" style="margin-top:14px;">
+        <div>
+          <label class="cb-label">Seguradora</label>
+          <select id="cb-modal-seguradora" class="cb-input">
+            <option value="">não informado</option>
+            <option>Porto</option>
+            <option>Yelum</option>
+            <option>Tokio</option>
+            <option>Allianz</option>
+            <option>HDI</option>
+            <option>Zurich</option>
+            <option>Bradesco</option>
+            <option>Mapfre</option>
+            <option>Suhai</option>
+            <option>Allseg</option>
+          </select>
+        </div>
+        <div>
+          <label class="cb-label">CPF</label>
+          <input id="cb-modal-cpf" class="cb-input" placeholder="não informado">
+        </div>
+      </div>
+      <label class="cb-label" style="margin-top:10px;">Corretor</label>
+      <select id="cb-modal-corretor" class="cb-input">
+        <option value="">não informado</option>
+        <option>Eric</option>
+        <option>Sena</option>
+      </select>
+
       <label class="cb-label" style="margin-top:14px;">Observações</label>
       <textarea id="cb-modal-obs" class="cb-input" rows="3" placeholder="Anotações sobre este cliente..."></textarea>
     </div>
