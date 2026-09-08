@@ -8,7 +8,7 @@
   };
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
-    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "",
+    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
     novaTarefaDrafts: {},
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null
   };
@@ -617,20 +617,24 @@
   function renderCobrancas() {
     var fila = buildFila();
     var today = todayISO();
-    var atrasados = fila.filter(function (f) { return f.parcela.data < today; });
-    var hoje = fila.filter(function (f) { return f.parcela.data === today; });
-    var totalReceber = fila.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0);
+
+    var termo = (state.cbSearchTerm || "").trim().toLowerCase();
+    var filaFiltrada = fila.filter(function (f) {
+      if (termo && f.cliente.nome.toLowerCase().indexOf(termo) === -1) return false;
+      if (state.cbFilterSeguradora && f.cliente.seguradora !== state.cbFilterSeguradora) return false;
+      if (state.cbFilterCorretor && f.cliente.corretor !== state.cbFilterCorretor) return false;
+      return true;
+    });
+
+    var atrasados = filaFiltrada.filter(function (f) { return f.parcela.data < today; });
+    var hoje = filaFiltrada.filter(function (f) { return f.parcela.data === today; });
+    var totalReceber = filaFiltrada.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0);
 
     document.getElementById("cb-stat-atrasados-n").textContent = atrasados.length;
     document.getElementById("cb-stat-atrasados-v").textContent = fmtMoney(atrasados.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0));
     document.getElementById("cb-stat-hoje-n").textContent = hoje.length;
     document.getElementById("cb-stat-hoje-v").textContent = fmtMoney(hoje.reduce(function (s, f) { return s + Number(f.parcela.valor); }, 0));
     document.getElementById("cb-stat-total").textContent = fmtMoney(totalReceber);
-
-    var termo = (state.cbSearchTerm || "").trim().toLowerCase();
-    var filaFiltrada = termo
-      ? fila.filter(function (f) { return f.cliente.nome.toLowerCase().indexOf(termo) !== -1; })
-      : fila;
 
     var grupos = [];
     filaFiltrada.forEach(function (item) {
@@ -643,7 +647,8 @@
     if (!grupos.length) {
       var empty = document.createElement("div");
       empty.className = "cb-empty";
-      empty.textContent = termo ? "Nenhum cliente encontrado para \"" + state.cbSearchTerm.trim() + "\"." : "Nenhuma cobrança pendente.";
+      var temFiltro = termo || state.cbFilterSeguradora || state.cbFilterCorretor;
+      empty.textContent = temFiltro ? "Nenhum cliente encontrado para os filtros aplicados." : "Nenhuma cobrança pendente.";
       cbFila.appendChild(empty);
       return;
     }
@@ -682,7 +687,10 @@
     var meta = document.createElement("div");
     meta.className = "cb-row-meta";
     var totalParcelas = state.parcelas.filter(function (p) { return p.cliente_id === cliente.id; }).length;
-    meta.textContent = cliente.forma + " · parcela " + parcela.numero + " de " + totalParcelas;
+    var metaTxt = cliente.forma + " · parcela " + parcela.numero + " de " + totalParcelas;
+    if (cliente.seguradora) metaTxt += " · " + cliente.seguradora;
+    if (cliente.corretor) metaTxt += " · " + cliente.corretor;
+    meta.textContent = metaTxt;
     nameWrap.appendChild(nameBtn);
     nameWrap.appendChild(meta);
     row.appendChild(nameWrap);
@@ -748,6 +756,14 @@
 
   document.getElementById("cb-search").addEventListener("input", function (ev) {
     state.cbSearchTerm = ev.target.value;
+    renderCobrancas();
+  });
+  document.getElementById("cb-filter-seguradora").addEventListener("change", function (ev) {
+    state.cbFilterSeguradora = ev.target.value;
+    renderCobrancas();
+  });
+  document.getElementById("cb-filter-corretor").addEventListener("change", function (ev) {
+    state.cbFilterCorretor = ev.target.value;
     renderCobrancas();
   });
 
