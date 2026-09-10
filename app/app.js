@@ -341,14 +341,14 @@
     var table = document.createElement("table");
     table.className = "commissions";
     var thead = document.createElement("thead");
-    thead.innerHTML = "<tr><th>Cliente</th><th>Situação</th><th>Data</th><th style=\"text-align:right\">Valor</th><th></th></tr>";
+    thead.innerHTML = "<tr><th>Cliente</th><th>Situação</th><th>Data</th><th>Colaborador</th><th style=\"text-align:right\">Valor</th><th></th></tr>";
     table.appendChild(thead);
     var tbody = document.createElement("tbody");
 
     if (!rows.length) {
       var er = document.createElement("tr");
       er.className = "empty-row";
-      er.innerHTML = "<td colspan=\"5\">Sem comissões lançadas.</td>";
+      er.innerHTML = "<td colspan=\"6\">Sem comissões lançadas.</td>";
       tbody.appendChild(er);
     }
 
@@ -376,6 +376,23 @@
       tdData.className = "mono";
       tdData.textContent = fmtDate(c.data);
       tr.appendChild(tdData);
+
+      var tdColab = document.createElement("td");
+      var colabSelect = document.createElement("select");
+      colabSelect.className = "cb-input";
+      ["", "Julio", "Matheus", "Cícero", "Gabriel"].forEach(function (opt) {
+        var o = document.createElement("option");
+        o.value = opt;
+        o.textContent = opt || "não informado";
+        colabSelect.appendChild(o);
+      });
+      colabSelect.value = c.colaborador || "";
+      colabSelect.addEventListener("change", async function () {
+        var res = await supabase.from("comissoes").update({ colaborador: colabSelect.value || null }).eq("id", c.id);
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      tdColab.appendChild(colabSelect);
+      tr.appendChild(tdColab);
 
       var tdVal = document.createElement("td");
       tdVal.className = "val tabular" + (Number(c.valor) < 0 ? " neg" : "");
@@ -412,6 +429,14 @@
     valInput.placeholder = "Valor";
     valInput.type = "number";
     valInput.step = "0.01";
+    var colabInput = document.createElement("select");
+    colabInput.className = "val";
+    ["", "Julio", "Matheus", "Cícero", "Gabriel"].forEach(function (opt) {
+      var o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt || "Colaborador";
+      colabInput.appendChild(o);
+    });
     var addBtn = document.createElement("button");
     addBtn.className = "btn small";
     addBtn.textContent = "Adicionar";
@@ -424,15 +449,18 @@
         cliente_nome: nome,
         valor: val,
         situacao: "pendente",
-        data: dataInput.value || todayISO()
+        data: dataInput.value || todayISO(),
+        colaborador: colabInput.value || null
       });
       if (res.error) return reportError(res.error);
       clienteInput.value = "";
       valInput.value = "";
+      colabInput.value = "";
       loadAll();
     });
     newRow.appendChild(clienteInput);
     newRow.appendChild(dataInput);
+    newRow.appendChild(colabInput);
     newRow.appendChild(valInput);
     newRow.appendChild(addBtn);
     card.appendChild(newRow);

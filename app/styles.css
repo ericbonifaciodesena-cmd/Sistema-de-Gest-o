@@ -128,8 +128,8 @@ table.commissions td.val { text-align: right; }
 .vendor-foot .total { font-weight: 600; }
 .empty-row td { color: var(--muted); font-style: italic; }
 
-.new-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr auto; gap: 6px; padding: 10px 16px; background: var(--surface-2); }
-.new-row input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); font-family: inherit; min-width: 0; }
+.new-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr auto; gap: 6px; padding: 10px 16px; background: var(--surface-2); }
+.new-row input, .new-row select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); font-family: inherit; min-width: 0; }
 .new-row input.val { font-family: "IBM Plex Mono", monospace; }
 
 .week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }

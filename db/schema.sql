@@ -53,6 +53,7 @@ create table comissoes (
     valor         numeric(12,2) not null,
     situacao      text not null default 'pendente' check (situacao in ('pago', 'pendente')),
     data          date not null,
+    colaborador   text check (colaborador in ('Julio', 'Matheus', 'Cícero', 'Gabriel')),
     criado_em     timestamptz not null default now()
 );
 

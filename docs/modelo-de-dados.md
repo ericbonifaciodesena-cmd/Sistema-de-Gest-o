@@ -46,10 +46,15 @@ atual.
 | valor         | numeric(12,2)| pode ser negativo (estornos, como na planilha) |
 | situacao      | text         | `pago` \| `pendente` |
 | data          | date         | |
+| colaborador   | text         | opcional — quem na equipe do vendedor fechou essa venda: `Julio`, `Matheus`, `Cícero` ou `Gabriel` |
 | criado_em     | timestamp    | |
 
 O "Total Transferido" por vendedor (soma dos pagos) é calculado por consulta,
 não é um campo armazenado.
+
+`colaborador` foi adicionado depois que o sistema já estava em uso — por isso
+é opcional (aceita vazio/nulo). Comissões lançadas antes disso aparecem no
+app como "não informado" até alguém preencher.
 
 ### Tarefa
 Tarefas da equipe interna, com data real — o quadro semanal (Seg. a Sex.)
