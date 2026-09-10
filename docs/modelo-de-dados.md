@@ -47,14 +47,25 @@ atual.
 | situacao      | text         | `pago` \| `pendente` |
 | data          | date         | |
 | colaborador   | text         | opcional — quem na equipe do vendedor fechou essa venda: `Julio`, `Matheus`, `Cícero` ou `Gabriel` |
+| valor_seguro         | numeric(12,2) | opcional — valor total do seguro/apólice dessa venda |
+| percentual_comissao  | numeric(5,2)  | opcional — % de comissão sobre o valor do seguro |
+| percentual_vendedor  | numeric(5,2)  | opcional — % da comissão que fica com o vendedor (contratos podem ser meio a meio ou outra divisão) |
 | criado_em     | timestamp    | |
 
 O "Total Transferido" por vendedor (soma dos pagos) é calculado por consulta,
 não é um campo armazenado.
 
-`colaborador` foi adicionado depois que o sistema já estava em uso — por isso
-é opcional (aceita vazio/nulo). Comissões lançadas antes disso aparecem no
+`colaborador`, `valor_seguro`, `percentual_comissao` e `percentual_vendedor`
+foram adicionados depois que o sistema já estava em uso — por isso são
+opcionais (aceitam vazio/nulo). Comissões lançadas antes disso aparecem no
 app como "não informado" até alguém preencher.
+
+Os três últimos campos existem para montar o "cartão de comissão": uma tela
+com os valores já preenchidos, pronta para copiar e enviar ao vendedor
+(mostrando valor do seguro, % de comissão usado e quanto o vendedor recebe).
+O campo `valor` continua sendo o valor final digitado manualmente — os novos
+campos são só o detalhamento por trás dele, não recalculam `valor`
+automaticamente.
 
 ### Tarefa
 Tarefas da equipe interna, com data real — o quadro semanal (Seg. a Sex.)

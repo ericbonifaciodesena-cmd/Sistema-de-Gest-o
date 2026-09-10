@@ -54,6 +54,9 @@ create table comissoes (
     situacao      text not null default 'pendente' check (situacao in ('pago', 'pendente')),
     data          date not null,
     colaborador   text check (colaborador in ('Julio', 'Matheus', 'Cícero', 'Gabriel')),
+    valor_seguro         numeric(12,2),
+    percentual_comissao  numeric(5,2),
+    percentual_vendedor  numeric(5,2),
     criado_em     timestamptz not null default now()
 );
 

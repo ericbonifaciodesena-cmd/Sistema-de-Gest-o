@@ -300,6 +300,45 @@
     </div>
   </div>
 
+  <div id="comissao-card-overlay" class="cb-modal-overlay" hidden>
+    <div class="cb-modal" id="comissao-card-modal">
+      <div class="cb-modal-head">
+        <div>
+          <h2 id="comissao-card-cliente"></h2>
+          <p class="tag" id="comissao-card-vendedor"></p>
+        </div>
+        <button class="icon-btn" id="comissao-card-close">✕</button>
+      </div>
+
+      <div class="crm-field-row">
+        <div>
+          <label class="cb-label">Valor do seguro</label>
+          <input id="comissao-card-seguro" class="cb-input" type="number" step="0.01" placeholder="opcional">
+        </div>
+        <div>
+          <label class="cb-label">Valor da comissão (repasse)</label>
+          <input id="comissao-card-valor" class="cb-input" type="number" step="0.01" disabled>
+        </div>
+      </div>
+      <div class="crm-field-row">
+        <div>
+          <label class="cb-label">% de comissão</label>
+          <input id="comissao-card-pct-comissao" class="cb-input" type="number" step="0.01" placeholder="opcional">
+        </div>
+        <div>
+          <label class="cb-label">% que fica com o vendedor</label>
+          <input id="comissao-card-pct-vendedor" class="cb-input" type="number" step="0.01" placeholder="opcional">
+        </div>
+      </div>
+
+      <label class="cb-label" style="margin-top:14px;">Cartão para enviar</label>
+      <pre id="comissao-card-preview" class="comissao-card-preview"></pre>
+      <div class="cb-new-actions">
+        <button class="btn small" id="comissao-card-copy">Copiar texto</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>

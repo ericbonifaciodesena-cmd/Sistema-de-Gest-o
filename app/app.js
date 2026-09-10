@@ -9,7 +9,7 @@
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
     cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
-    novaTarefaDrafts: {},
+    novaTarefaDrafts: {}, comissaoCardId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null
   };
 
@@ -400,6 +400,13 @@
       tr.appendChild(tdVal);
 
       var tdDel = document.createElement("td");
+      var sendBtn = document.createElement("button");
+      sendBtn.className = "icon-btn";
+      sendBtn.textContent = "📤";
+      sendBtn.title = "Enviar comissão";
+      sendBtn.addEventListener("click", function () { openComissaoCard(c.id, vendor); });
+      tdDel.appendChild(sendBtn);
+
       var delRowBtn = document.createElement("button");
       delRowBtn.className = "icon-btn";
       delRowBtn.textContent = "✕";
@@ -472,6 +479,87 @@
 
     return card;
   }
+
+  // ---- cartão de comissão ----
+  var comissaoCardOverlay = document.getElementById("comissao-card-overlay");
+  var comissaoCardCliente = document.getElementById("comissao-card-cliente");
+  var comissaoCardVendedor = document.getElementById("comissao-card-vendedor");
+  var comissaoCardSeguro = document.getElementById("comissao-card-seguro");
+  var comissaoCardValor = document.getElementById("comissao-card-valor");
+  var comissaoCardPctComissao = document.getElementById("comissao-card-pct-comissao");
+  var comissaoCardPctVendedor = document.getElementById("comissao-card-pct-vendedor");
+  var comissaoCardPreview = document.getElementById("comissao-card-preview");
+
+  function openComissaoCard(comissaoId, vendor) {
+    state.comissaoCardId = comissaoId;
+    state.comissaoCardVendorNome = vendor.nome;
+    renderComissaoCard();
+    comissaoCardOverlay.hidden = false;
+  }
+  function closeComissaoCard() {
+    comissaoCardOverlay.hidden = true;
+    state.comissaoCardId = null;
+  }
+  document.getElementById("comissao-card-close").addEventListener("click", closeComissaoCard);
+  comissaoCardOverlay.addEventListener("click", function (ev) { if (ev.target === comissaoCardOverlay) closeComissaoCard(); });
+
+  function renderComissaoCard() {
+    var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
+    if (!c) return;
+    comissaoCardCliente.textContent = c.cliente_nome;
+    comissaoCardVendedor.textContent = state.comissaoCardVendorNome;
+    comissaoCardValor.value = c.valor;
+    if (document.activeElement !== comissaoCardSeguro) comissaoCardSeguro.value = c.valor_seguro != null ? c.valor_seguro : "";
+    if (document.activeElement !== comissaoCardPctComissao) comissaoCardPctComissao.value = c.percentual_comissao != null ? c.percentual_comissao : "";
+    if (document.activeElement !== comissaoCardPctVendedor) comissaoCardPctVendedor.value = c.percentual_vendedor != null ? c.percentual_vendedor : "";
+    atualizarComissaoCardPreview(c);
+  }
+
+  function atualizarComissaoCardPreview(c) {
+    var seguro = parseFloat(comissaoCardSeguro.value);
+    var pctComissao = parseFloat(comissaoCardPctComissao.value);
+    var pctVendedor = parseFloat(comissaoCardPctVendedor.value);
+
+    var comissaoTotal = (!isNaN(seguro) && !isNaN(pctComissao)) ? seguro * pctComissao / 100 : null;
+
+    var linhas = [];
+    linhas.push("Comissão — " + c.cliente_nome);
+    linhas.push("Vendedor: " + state.comissaoCardVendorNome);
+    linhas.push("Data: " + fmtDate(c.data));
+    linhas.push("");
+    if (!isNaN(seguro)) linhas.push("Valor do seguro: " + fmtMoney(seguro));
+    if (!isNaN(pctComissao)) linhas.push("Comissão (" + pctComissao + "%): " + (comissaoTotal != null ? fmtMoney(comissaoTotal) : "—"));
+    if (!isNaN(pctVendedor)) linhas.push("Divisão do vendedor: " + pctVendedor + "%");
+    linhas.push("Valor a receber: " + fmtMoney(Number(c.valor)));
+
+    comissaoCardPreview.textContent = linhas.join("\n");
+  }
+
+  function comissaoCardBindField(el, campo) {
+    el.addEventListener("blur", async function () {
+      if (!state.comissaoCardId) return;
+      var v = parseFloat(el.value);
+      var res = await supabase.from("comissoes").update(
+        Object.fromEntries([[campo, isNaN(v) ? null : v]])
+      ).eq("id", state.comissaoCardId);
+      if (res.error) reportError(res.error); else loadAll();
+    });
+    el.addEventListener("input", function () {
+      var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
+      if (c) atualizarComissaoCardPreview(c);
+    });
+  }
+  comissaoCardBindField(comissaoCardSeguro, "valor_seguro");
+  comissaoCardBindField(comissaoCardPctComissao, "percentual_comissao");
+  comissaoCardBindField(comissaoCardPctVendedor, "percentual_vendedor");
+
+  document.getElementById("comissao-card-copy").addEventListener("click", async function () {
+    try {
+      await navigator.clipboard.writeText(comissaoCardPreview.textContent);
+    } catch (e) {
+      reportError("Não foi possível copiar automaticamente. Selecione o texto do cartão manualmente.");
+    }
+  });
 
   document.getElementById("add-vendor-btn").addEventListener("click", async function () {
     var nome = prompt("Nome do vendedor:");
@@ -1295,5 +1383,6 @@
     if (state.cbModalClienteId) renderCbModal();
     renderCrm();
     if (state.crmModalNegocioId) renderCrmModal();
+    if (state.comissaoCardId) renderComissaoCard();
   }
 })();
