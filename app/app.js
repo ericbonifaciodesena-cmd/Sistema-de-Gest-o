@@ -540,9 +540,10 @@
       comissaoCardPreview.innerHTML = "<p class=\"tag\">Preencha prêmio total, % de comissão e % do vendedor para gerar o cartão.</p>";
       return;
     }
+    var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
     comissaoCardPreview.innerHTML =
       "<table class=\"comissao-card-table\">" +
-      "<thead><tr><th colspan=\"2\">Pagamento de comissão - " + state.comissaoCardVendorNome + "</th></tr></thead>" +
+      "<thead><tr><th colspan=\"2\">Pagamento de comissão - " + state.comissaoCardVendorNome + " - " + primeiroNome + "</th></tr></thead>" +
       "<tbody>" +
       "<tr><th>Prêmio Total</th><td>" + fmtMoney(r.premioTotal) + "</td></tr>" +
       "<tr><th>Prêmio Líquido</th><td>" + fmtMoney(r.premioLiquido) + "</td></tr>" +
@@ -581,7 +582,8 @@
     var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
     var r = calcularComissaoCard();
     if (!c || !r) return;
-    var texto = "Pagamento de comissão - " + state.comissaoCardVendorNome + "\n" +
+    var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
+    var texto = "Pagamento de comissão - " + state.comissaoCardVendorNome + " - " + primeiroNome + "\n" +
       "Prêmio Total: " + fmtMoney(r.premioTotal) + "\n" +
       "Prêmio Líquido: " + fmtMoney(r.premioLiquido) + "\n" +
       "Comissão Bruta: " + fmtMoney(r.comissaoBruta) + "\n" +
@@ -591,6 +593,22 @@
       await navigator.clipboard.writeText(texto);
     } catch (e) {
       reportError("Não foi possível copiar automaticamente. Selecione o texto do cartão manualmente.");
+    }
+  });
+
+  document.getElementById("comissao-card-baixar").addEventListener("click", async function () {
+    var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
+    var tabela = comissaoCardPreview.querySelector("table");
+    if (!c || !tabela) return;
+    try {
+      var canvas = await html2canvas(tabela, { backgroundColor: null, scale: 2 });
+      var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
+      var link = document.createElement("a");
+      link.download = ("comissao-" + state.comissaoCardVendorNome + "-" + primeiroNome).replace(/\s+/g, "-") + ".png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (e) {
+      reportError("Não foi possível gerar a imagem do cartão.");
     }
   });
 
