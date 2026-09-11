@@ -227,20 +227,20 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 .comissao-card-preview { margin: 6px 0 0; }
 .comissao-card-table {
   width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 10px;
-  font-size: 13px; border: 1px solid var(--ink);
+  font-size: 13px; border: 1px solid #0C273C; color: #0C273C;
 }
 .comissao-card-table th, .comissao-card-table td { padding: 8px 12px; text-align: center; }
 .comissao-card-table thead th {
-  background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 700;
+  background: #0C273C; color: #fff; font-size: 14px; font-weight: 700;
 }
 .comissao-card-title { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .comissao-card-logo { height: 26px; width: auto; }
 .comissao-card-table tbody th {
-  background: var(--ink); color: var(--surface); font-weight: 500; text-align: left; width: 55%;
+  background: #0C273C; color: #fff; font-weight: 500; text-align: left; width: 55%;
 }
-.comissao-card-table tbody td { background: var(--surface); font-weight: 700; }
+.comissao-card-table tbody td { background: #fff; font-weight: 700; }
 .comissao-card-table tbody tr:not(:last-child) th,
-.comissao-card-table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+.comissao-card-table tbody tr:not(:last-child) td { border-bottom: 1px solid #d7dde3; }
 .cb-parcela-row {
   display: grid; grid-template-columns: 22px minmax(0,1fr) auto auto; align-items: center; gap: 10px;
   padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 13px;
