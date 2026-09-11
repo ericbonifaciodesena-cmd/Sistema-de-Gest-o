@@ -599,11 +599,23 @@
     }
   });
 
+  function aguardarImagens(el) {
+    var imgs = el.querySelectorAll("img");
+    return Promise.all(Array.prototype.map.call(imgs, function (img) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(function (resolve) {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      });
+    }));
+  }
+
   document.getElementById("comissao-card-baixar").addEventListener("click", async function () {
     var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
     var tabela = comissaoCardPreview.querySelector("table");
     if (!c || !tabela) return;
     try {
+      await aguardarImagens(tabela);
       var canvas = await html2canvas(tabela, { backgroundColor: null, scale: 2, useCORS: true });
       var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
       var link = document.createElement("a");
