@@ -233,6 +233,8 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 .comissao-card-table thead th {
   background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 700;
 }
+.comissao-card-title { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.comissao-card-logo { height: 26px; width: auto; }
 .comissao-card-table tbody th {
   background: var(--ink); color: var(--surface); font-weight: 500; text-align: left; width: 55%;
 }

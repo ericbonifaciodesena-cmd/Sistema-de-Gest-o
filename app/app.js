@@ -543,7 +543,10 @@
     var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
     comissaoCardPreview.innerHTML =
       "<table class=\"comissao-card-table\">" +
-      "<thead><tr><th colspan=\"2\">Pagamento de comissão - " + state.comissaoCardVendorNome + " - " + primeiroNome + "</th></tr></thead>" +
+      "<thead><tr><th colspan=\"2\"><div class=\"comissao-card-title\">" +
+      "<img src=\"logo-sena.png\" alt=\"Sena Seguros\" class=\"comissao-card-logo\">" +
+      "<span>Pagamento de comissão - " + primeiroNome + "</span>" +
+      "</div></th></tr></thead>" +
       "<tbody>" +
       "<tr><th>Prêmio Total</th><td>" + fmtMoney(r.premioTotal) + "</td></tr>" +
       "<tr><th>Prêmio Líquido</th><td>" + fmtMoney(r.premioLiquido) + "</td></tr>" +
@@ -583,7 +586,7 @@
     var r = calcularComissaoCard();
     if (!c || !r) return;
     var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
-    var texto = "Pagamento de comissão - " + state.comissaoCardVendorNome + " - " + primeiroNome + "\n" +
+    var texto = "Pagamento de comissão - " + primeiroNome + "\n" +
       "Prêmio Total: " + fmtMoney(r.premioTotal) + "\n" +
       "Prêmio Líquido: " + fmtMoney(r.premioLiquido) + "\n" +
       "Comissão Bruta: " + fmtMoney(r.comissaoBruta) + "\n" +
@@ -601,7 +604,7 @@
     var tabela = comissaoCardPreview.querySelector("table");
     if (!c || !tabela) return;
     try {
-      var canvas = await html2canvas(tabela, { backgroundColor: null, scale: 2 });
+      var canvas = await html2canvas(tabela, { backgroundColor: null, scale: 2, useCORS: true });
       var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
       var link = document.createElement("a");
       link.download = ("comissao-" + state.comissaoCardVendorNome + "-" + primeiroNome).replace(/\s+/g, "-") + ".png";
