@@ -481,11 +481,13 @@
   }
 
   // ---- cartão de comissão ----
+  var IOF_PCT = 7.38;
+  var IMPOSTO_PCT = 14;
+
   var comissaoCardOverlay = document.getElementById("comissao-card-overlay");
   var comissaoCardCliente = document.getElementById("comissao-card-cliente");
   var comissaoCardVendedor = document.getElementById("comissao-card-vendedor");
   var comissaoCardSeguro = document.getElementById("comissao-card-seguro");
-  var comissaoCardValor = document.getElementById("comissao-card-valor");
   var comissaoCardPctComissao = document.getElementById("comissao-card-pct-comissao");
   var comissaoCardPctVendedor = document.getElementById("comissao-card-pct-vendedor");
   var comissaoCardPreview = document.getElementById("comissao-card-preview");
@@ -508,31 +510,46 @@
     if (!c) return;
     comissaoCardCliente.textContent = c.cliente_nome;
     comissaoCardVendedor.textContent = state.comissaoCardVendorNome;
-    comissaoCardValor.value = c.valor;
     if (document.activeElement !== comissaoCardSeguro) comissaoCardSeguro.value = c.valor_seguro != null ? c.valor_seguro : "";
     if (document.activeElement !== comissaoCardPctComissao) comissaoCardPctComissao.value = c.percentual_comissao != null ? c.percentual_comissao : "";
     if (document.activeElement !== comissaoCardPctVendedor) comissaoCardPctVendedor.value = c.percentual_vendedor != null ? c.percentual_vendedor : "";
     atualizarComissaoCardPreview(c);
   }
 
-  function atualizarComissaoCardPreview(c) {
-    var seguro = parseFloat(comissaoCardSeguro.value);
+  function calcularComissaoCard() {
+    var premioTotal = parseFloat(comissaoCardSeguro.value);
     var pctComissao = parseFloat(comissaoCardPctComissao.value);
     var pctVendedor = parseFloat(comissaoCardPctVendedor.value);
+    if (isNaN(premioTotal) || isNaN(pctComissao) || isNaN(pctVendedor)) return null;
 
-    var comissaoTotal = (!isNaN(seguro) && !isNaN(pctComissao)) ? seguro * pctComissao / 100 : null;
+    var premioLiquido = premioTotal / (1 + IOF_PCT / 100);
+    var comissaoBruta = premioLiquido * (pctComissao / 100);
+    var comissaoLiquida = comissaoBruta * (1 - IMPOSTO_PCT / 100);
+    var valorFinal = comissaoLiquida * (pctVendedor / 100);
 
-    var linhas = [];
-    linhas.push("Comissão — " + c.cliente_nome);
-    linhas.push("Vendedor: " + state.comissaoCardVendorNome);
-    linhas.push("Data: " + fmtDate(c.data));
-    linhas.push("");
-    if (!isNaN(seguro)) linhas.push("Valor do seguro: " + fmtMoney(seguro));
-    if (!isNaN(pctComissao)) linhas.push("Comissão (" + pctComissao + "%): " + (comissaoTotal != null ? fmtMoney(comissaoTotal) : "—"));
-    if (!isNaN(pctVendedor)) linhas.push("Divisão do vendedor: " + pctVendedor + "%");
-    linhas.push("Valor a receber: " + fmtMoney(Number(c.valor)));
+    return {
+      premioTotal: premioTotal, premioLiquido: premioLiquido,
+      comissaoBruta: comissaoBruta, comissaoLiquida: comissaoLiquida,
+      pctComissao: pctComissao, pctVendedor: pctVendedor, valorFinal: valorFinal
+    };
+  }
 
-    comissaoCardPreview.textContent = linhas.join("\n");
+  function atualizarComissaoCardPreview(c) {
+    var r = calcularComissaoCard();
+    if (!r) {
+      comissaoCardPreview.innerHTML = "<p class=\"tag\">Preencha prêmio total, % de comissão e % do vendedor para gerar o cartão.</p>";
+      return;
+    }
+    comissaoCardPreview.innerHTML =
+      "<table class=\"comissao-card-table\">" +
+      "<thead><tr><th colspan=\"2\">Pagamento de comissão - " + state.comissaoCardVendorNome + "</th></tr></thead>" +
+      "<tbody>" +
+      "<tr><th>Prêmio Total</th><td>" + fmtMoney(r.premioTotal) + "</td></tr>" +
+      "<tr><th>Prêmio Líquido</th><td>" + fmtMoney(r.premioLiquido) + "</td></tr>" +
+      "<tr><th>Comissão Bruta</th><td>" + fmtMoney(r.comissaoBruta) + "</td></tr>" +
+      "<tr><th>Comissão Líquida</th><td>" + fmtMoney(r.comissaoLiquida) + "</td></tr>" +
+      "<tr><th>Comissão " + r.pctComissao + "% (" + r.pctVendedor + "%)</th><td>" + fmtMoney(r.valorFinal) + "</td></tr>" +
+      "</tbody></table>";
   }
 
   function comissaoCardBindField(el, campo) {
@@ -553,9 +570,25 @@
   comissaoCardBindField(comissaoCardPctComissao, "percentual_comissao");
   comissaoCardBindField(comissaoCardPctVendedor, "percentual_vendedor");
 
+  document.getElementById("comissao-card-usar-valor").addEventListener("click", async function () {
+    var r = calcularComissaoCard();
+    if (!r || !state.comissaoCardId) return;
+    var res = await supabase.from("comissoes").update({ valor: Number(r.valorFinal.toFixed(2)) }).eq("id", state.comissaoCardId);
+    if (res.error) reportError(res.error); else loadAll();
+  });
+
   document.getElementById("comissao-card-copy").addEventListener("click", async function () {
+    var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
+    var r = calcularComissaoCard();
+    if (!c || !r) return;
+    var texto = "Pagamento de comissão - " + state.comissaoCardVendorNome + "\n" +
+      "Prêmio Total: " + fmtMoney(r.premioTotal) + "\n" +
+      "Prêmio Líquido: " + fmtMoney(r.premioLiquido) + "\n" +
+      "Comissão Bruta: " + fmtMoney(r.comissaoBruta) + "\n" +
+      "Comissão Líquida: " + fmtMoney(r.comissaoLiquida) + "\n" +
+      "Comissão " + r.pctComissao + "% (" + r.pctVendedor + "%): " + fmtMoney(r.valorFinal);
     try {
-      await navigator.clipboard.writeText(comissaoCardPreview.textContent);
+      await navigator.clipboard.writeText(texto);
     } catch (e) {
       reportError("Não foi possível copiar automaticamente. Selecione o texto do cartão manualmente.");
     }

@@ -224,11 +224,21 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 }
 .cb-modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .cb-modal-head h2 { margin: 0; font-size: 18px; }
-.comissao-card-preview {
-  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
-  padding: 14px; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; line-height: 1.6;
-  white-space: pre-wrap; margin: 6px 0 0;
+.comissao-card-preview { margin: 6px 0 0; }
+.comissao-card-table {
+  width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 10px;
+  font-size: 13px; border: 1px solid var(--ink);
 }
+.comissao-card-table th, .comissao-card-table td { padding: 8px 12px; text-align: center; }
+.comissao-card-table thead th {
+  background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 700;
+}
+.comissao-card-table tbody th {
+  background: var(--ink); color: var(--surface); font-weight: 500; text-align: left; width: 55%;
+}
+.comissao-card-table tbody td { background: var(--surface); font-weight: 700; }
+.comissao-card-table tbody tr:not(:last-child) th,
+.comissao-card-table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
 .cb-parcela-row {
   display: grid; grid-template-columns: 22px minmax(0,1fr) auto auto; align-items: center; gap: 10px;
   padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 13px;

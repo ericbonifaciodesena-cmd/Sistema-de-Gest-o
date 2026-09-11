@@ -47,9 +47,9 @@ atual.
 | situacao      | text         | `pago` \| `pendente` |
 | data          | date         | |
 | colaborador   | text         | opcional — quem na equipe do vendedor fechou essa venda: `Julio`, `Matheus`, `Cícero` ou `Gabriel` |
-| valor_seguro         | numeric(12,2) | opcional — valor total do seguro/apólice dessa venda |
-| percentual_comissao  | numeric(5,2)  | opcional — % de comissão sobre o valor do seguro |
-| percentual_vendedor  | numeric(5,2)  | opcional — % da comissão que fica com o vendedor (contratos podem ser meio a meio ou outra divisão) |
+| valor_seguro         | numeric(12,2) | opcional — Prêmio Total do seguro/apólice dessa venda |
+| percentual_comissao  | numeric(5,2)  | opcional — % de comissão sobre o Prêmio Líquido |
+| percentual_vendedor  | numeric(5,2)  | opcional — % da comissão líquida que fica com o vendedor (contratos podem ser meio a meio ou outra divisão) |
 | criado_em     | timestamp    | |
 
 O "Total Transferido" por vendedor (soma dos pagos) é calculado por consulta,
@@ -61,11 +61,20 @@ opcionais (aceitam vazio/nulo). Comissões lançadas antes disso aparecem no
 app como "não informado" até alguém preencher.
 
 Os três últimos campos existem para montar o "cartão de comissão": uma tela
-com os valores já preenchidos, pronta para copiar e enviar ao vendedor
-(mostrando valor do seguro, % de comissão usado e quanto o vendedor recebe).
-O campo `valor` continua sendo o valor final digitado manualmente — os novos
-campos são só o detalhamento por trás dele, não recalculam `valor`
-automaticamente.
+com os valores já preenchidos, no mesmo formato da planilha que já era usada
+para mandar pro vendedor. A conta segue sempre a mesma fórmula (IOF e
+imposto são taxas fixas, não ficam salvas por comissão):
+
+```
+Prêmio Líquido   = Prêmio Total / (1 + 7,38%)         [IOF fixo]
+Comissão Bruta   = Prêmio Líquido × percentual_comissao
+Comissão Líquida = Comissão Bruta × (1 − 14%)          [imposto fixo]
+Valor final       = Comissão Líquida × percentual_vendedor
+```
+
+O campo `valor` continua sendo o valor final da comissão, preenchido
+manualmente na tabela — o cartão só calcula e mostra o `Valor final`, com um
+botão para copiá-lo para o `valor` da linha quando quiser.
 
 ### Tarefa
 Tarefas da equipe interna, com data real — o quadro semanal (Seg. a Sex.)
