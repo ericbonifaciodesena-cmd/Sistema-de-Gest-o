@@ -544,7 +544,7 @@
     comissaoCardPreview.innerHTML =
       "<table class=\"comissao-card-table\">" +
       "<thead><tr><th colspan=\"2\"><div class=\"comissao-card-title\">" +
-      "<img src=\"icone-sena-offwhite.png?v=2\" alt=\"Sena Seguros\" class=\"comissao-card-logo\">" +
+      "<img src=\"icone-sena-offwhite.png?v=3\" alt=\"Sena Seguros\" class=\"comissao-card-logo\">" +
       "<span>Pagamento de comissão - " + primeiroNome + "</span>" +
       "</div></th></tr></thead>" +
       "<tbody>" +
