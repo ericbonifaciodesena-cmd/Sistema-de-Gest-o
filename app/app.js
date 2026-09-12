@@ -610,17 +610,45 @@
     }));
   }
 
+  function recortarCantosArredondados(canvasOrigem, raioCss, escala) {
+    var raio = raioCss * escala;
+    var w = canvasOrigem.width;
+    var h = canvasOrigem.height;
+    var saida = document.createElement("canvas");
+    saida.width = w;
+    saida.height = h;
+    var ctx = saida.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    if ("imageSmoothingQuality" in ctx) ctx.imageSmoothingQuality = "high";
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(0, 0, w, h, raio);
+    } else {
+      ctx.moveTo(raio, 0);
+      ctx.arcTo(w, 0, w, h, raio);
+      ctx.arcTo(w, h, 0, h, raio);
+      ctx.arcTo(0, h, 0, 0, raio);
+      ctx.arcTo(0, 0, w, 0, raio);
+    }
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(canvasOrigem, 0, 0);
+    return saida;
+  }
+
   document.getElementById("comissao-card-baixar").addEventListener("click", async function () {
     var c = state.comissoes.find(function (x) { return x.id === state.comissaoCardId; });
     var tabela = comissaoCardPreview.querySelector("table");
     if (!c || !tabela) return;
     try {
       await aguardarImagens(tabela);
-      var canvas = await html2canvas(tabela, { backgroundColor: null, scale: 2, useCORS: true });
+      var escala = 3;
+      var canvasBruto = await html2canvas(tabela, { backgroundColor: null, scale: escala, useCORS: true });
+      var canvasFinal = recortarCantosArredondados(canvasBruto, 10, escala);
       var primeiroNome = (c.cliente_nome || "").trim().split(" ")[0];
       var link = document.createElement("a");
       link.download = ("comissao-" + state.comissaoCardVendorNome + "-" + primeiroNome).replace(/\s+/g, "-") + ".png";
-      link.href = canvas.toDataURL("image/png");
+      link.href = canvasFinal.toDataURL("image/png");
       link.click();
     } catch (e) {
       reportError("Não foi possível gerar a imagem do cartão.");
