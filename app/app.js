@@ -1066,15 +1066,25 @@
     var pRes = await comLimiteDeTempo(supabase.from("parcelas").insert(parcelasRows), 10);
     if (pRes.error) return reportError(pRes.error);
 
-    // Confere de verdade se o cliente ficou visível pra essa conta (RLS
-    // pode deixar inserir mas esconder na leitura, ou algo pode ter dado
-    // errado sem gerar erro) — evita cadastro "fantasma" sem avisar nada.
-    var checkRes = await comLimiteDeTempo(
+    // Confere de verdade se o cliente E as parcelas ficaram visíveis pra
+    // essa conta (RLS pode deixar inserir mas esconder na leitura, ou
+    // algo pode ter dado errado sem gerar erro) — evita cadastro
+    // "fantasma" sem avisar nada.
+    var checkCliente = await comLimiteDeTempo(
       supabase.from("cobranca_clientes").select("id").eq("id", clienteRes.data.id).maybeSingle(),
       10
     );
-    if (checkRes.error || !checkRes.data) {
+    var checkParcelas = await comLimiteDeTempo(
+      supabase.from("parcelas").select("id", { count: "exact", head: true }).eq("cliente_id", clienteRes.data.id),
+      10
+    );
+    console.log("Verificação após cadastro:", { checkCliente: checkCliente, checkParcelas: checkParcelas });
+    if (checkCliente.error || !checkCliente.data) {
       alert("O cliente foi enviado, mas não consegui confirmar que ele ficou salvo. Atualize a página (F5) e confira antes de cadastrar de novo, pra não duplicar.");
+      return;
+    }
+    if (checkParcelas.error || !checkParcelas.count) {
+      alert('O cliente "' + nome + '" foi salvo, mas as parcelas dele não. Abra o console (F12) e me mostre a linha "Verificação após cadastro" que apareceu — isso vai mostrar o motivo exato.');
       return;
     }
 
