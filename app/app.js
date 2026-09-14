@@ -228,16 +228,36 @@
   tabConversor.addEventListener("click", function () { selectTab("conversor"); });
 
   // ---- data loading ----
+  // O Supabase (PostgREST) limita cada resposta a um número máximo de
+  // linhas por padrão (geralmente 1000), sem avisar nada — se a tabela
+  // já tiver mais linhas que isso, os registros "extras" simplesmente
+  // não vêm na resposta. Isso faz parecer que um cadastro novo sumiu,
+  // quando na verdade só ficou de fora do bloco trazido. Busca em
+  // blocos até trazer tudo, não importa quantas linhas existam.
+  async function fetchAllRows(tableName, selectStr) {
+    var pageSize = 1000;
+    var all = [];
+    var from = 0;
+    while (true) {
+      var res = await supabase.from(tableName).select(selectStr).range(from, from + pageSize - 1);
+      if (res.error) return res;
+      all = all.concat(res.data);
+      if (res.data.length < pageSize) break;
+      from += pageSize;
+    }
+    return { data: all, error: null };
+  }
+
   async function loadAllOnce() {
     var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes] = await Promise.all([
-      supabase.from("vendedores").select("*"),
-      supabase.from("comissoes").select("*"),
-      supabase.from("tarefas").select("*, perfis(nome)"),
-      supabase.from("cobranca_clientes").select("*"),
-      supabase.from("parcelas").select("*"),
-      supabase.from("negocios").select("*"),
-      supabase.from("cotacoes").select("*"),
-      supabase.from("atividades").select("*, perfis(nome)")
+      fetchAllRows("vendedores", "*"),
+      fetchAllRows("comissoes", "*"),
+      fetchAllRows("tarefas", "*, perfis(nome)"),
+      fetchAllRows("cobranca_clientes", "*"),
+      fetchAllRows("parcelas", "*"),
+      fetchAllRows("negocios", "*"),
+      fetchAllRows("cotacoes", "*"),
+      fetchAllRows("atividades", "*, perfis(nome)")
     ]);
     var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error;
     if (erro) return erro;
