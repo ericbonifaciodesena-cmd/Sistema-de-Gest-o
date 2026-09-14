@@ -1,5 +1,17 @@
 (function () {
-  var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // Sem isso, o navegador (ou um proxy no meio do caminho) pode guardar em
+  // cache a resposta de consultas repetidas (ex: "buscar todos os clientes"
+  // é sempre a mesma URL) e nunca trazer registros criados depois — dando
+  // a impressão de que um cadastro novo "sumiu", mesmo estando salvo certo.
+  var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+    global: {
+      fetch: function (url, options) {
+        options = options || {};
+        options.cache = "no-store";
+        return fetch(url, options);
+      }
+    }
+  });
 
   var DAY_NAMES = ["Seg.", "Ter.", "Qua.", "Qui.", "Sex."];
   var ESTAGIOS = {
