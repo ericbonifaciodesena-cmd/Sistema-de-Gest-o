@@ -825,7 +825,7 @@
 
   // ---- render: cobrancas ----
   var cbFila = document.getElementById("cb-fila");
-  var cbAddToggle = document.getElementById("cb-add-toggle");
+  var cbAddToggle = document.getElementById("cb-abrir-form");
   var cbNewForm = document.getElementById("cb-new-form");
   var cbModalOverlay = document.getElementById("cb-modal-overlay");
 
@@ -1003,14 +1003,30 @@
   cbAddToggle.addEventListener("click", function () {
     cbNewForm.hidden = !cbNewForm.hidden;
   });
-  document.getElementById("cb-add-cancel").addEventListener("click", function () { cbNewForm.hidden = true; });
+  document.getElementById("cb-fechar-form").addEventListener("click", function () { cbNewForm.hidden = true; });
   document.querySelectorAll(".cb-forma-chip").forEach(function (chip) {
     chip.addEventListener("click", function () {
       state.cbForma = chip.getAttribute("data-forma");
       document.querySelectorAll(".cb-forma-chip").forEach(function (c) { c.classList.toggle("is-on", c === chip); });
     });
   });
-  document.getElementById("cb-add-confirm").addEventListener("click", async function () {
+  var cbSalvandoCliente = false;
+  async function salvarNovoCliente() {
+    if (cbSalvandoCliente) return;
+    cbSalvandoCliente = true;
+    try {
+      await salvarNovoClienteImpl();
+    } finally {
+      cbSalvandoCliente = false;
+    }
+  }
+  // Escuta o clique no formulário inteiro (em vez de só no botão) — assim
+  // continua funcionando mesmo se alguma extensão do navegador (ex:
+  // bloqueador de anúncios/Avast) interferir num elemento específico.
+  cbNewForm.addEventListener("click", function (ev) {
+    if (ev.target.closest("#cb-salvar-cliente")) salvarNovoCliente();
+  });
+  async function salvarNovoClienteImpl() {
     var nome = document.getElementById("cb-nome").value.trim();
     var valor = parseFloat(document.getElementById("cb-valor").value);
     var dataIni = document.getElementById("cb-data").value;
@@ -1081,7 +1097,7 @@
 
     await loadAll();
     alert('Cliente "' + nome + '" adicionado com sucesso.');
-  });
+  }
 
   function openCbModal(clienteId) {
     state.cbModalClienteId = clienteId;
