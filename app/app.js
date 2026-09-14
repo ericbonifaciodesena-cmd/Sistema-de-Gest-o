@@ -216,7 +216,7 @@
   tabConversor.addEventListener("click", function () { selectTab("conversor"); });
 
   // ---- data loading ----
-  async function loadAll() {
+  async function loadAllOnce() {
     var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes] = await Promise.all([
       supabase.from("vendedores").select("*"),
       supabase.from("comissoes").select("*"),
@@ -227,14 +227,8 @@
       supabase.from("cotacoes").select("*"),
       supabase.from("atividades").select("*, perfis(nome)")
     ]);
-    if (vRes.error) return reportError(vRes.error);
-    if (cRes.error) return reportError(cRes.error);
-    if (tRes.error) return reportError(tRes.error);
-    if (ccRes.error) return reportError(ccRes.error);
-    if (pRes.error) return reportError(pRes.error);
-    if (nRes.error) return reportError(nRes.error);
-    if (qRes.error) return reportError(qRes.error);
-    if (aRes.error) return reportError(aRes.error);
+    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error;
+    if (erro) return erro;
     state.vendedores = vRes.data;
     state.comissoes = cRes.data;
     state.tarefas = tRes.data;
@@ -244,6 +238,19 @@
     state.cotacoes = qRes.data;
     state.atividades = aRes.data;
     renderAll();
+    return null;
+  }
+  // Uma consulta entre as várias que essa função dispara ao mesmo tempo
+  // pode falhar isoladamente (ex: token de sessão renovando bem nesse
+  // instante) — sem isso, a tela ficava com dados desatualizados sem
+  // avisar nada. Tenta de novo uma vez antes de desistir e avisar.
+  async function loadAll() {
+    var erro = await loadAllOnce();
+    if (!erro) return true;
+    erro = await loadAllOnce();
+    if (!erro) return true;
+    reportError(erro);
+    return false;
   }
 
   var channel = null;
@@ -1105,7 +1112,11 @@
     document.getElementById("cb-filter-seguradora").value = "";
     document.getElementById("cb-filter-corretor").value = "";
 
-    await loadAll();
+    var atualizou = await loadAll();
+    if (!atualizou) {
+      alert('O cliente "' + nome + '" foi salvo (confirmado no banco), mas a tela não conseguiu atualizar a lista agora. Atualize a página (F5) pra ver ele — não precisa cadastrar de novo.');
+      return;
+    }
     alert('Cliente "' + nome + '" adicionado com sucesso.');
   }
 
