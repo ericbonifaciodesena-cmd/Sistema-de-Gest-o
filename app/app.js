@@ -24,6 +24,10 @@
     novaTarefaDrafts: {}, comissaoCardId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null
   };
+  // Exposto só pra dar pra inspecionar pelo console do navegador durante
+  // depuração (window.__debug.state...). Não expõe nada que já não
+  // apareça na tela — é a mesma "anon key" pública usada pelo app.
+  window.__debug = { state: state };
 
   function safeStorageGet(key) {
     try { return localStorage.getItem(key); } catch (e) { return null; }
