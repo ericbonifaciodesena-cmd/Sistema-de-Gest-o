@@ -1050,6 +1050,18 @@
     var pRes = await comLimiteDeTempo(supabase.from("parcelas").insert(parcelasRows), 10);
     if (pRes.error) return reportError(pRes.error);
 
+    // Confere de verdade se o cliente ficou visível pra essa conta (RLS
+    // pode deixar inserir mas esconder na leitura, ou algo pode ter dado
+    // errado sem gerar erro) — evita cadastro "fantasma" sem avisar nada.
+    var checkRes = await comLimiteDeTempo(
+      supabase.from("cobranca_clientes").select("id").eq("id", clienteRes.data.id).maybeSingle(),
+      10
+    );
+    if (checkRes.error || !checkRes.data) {
+      alert("O cliente foi enviado, mas não consegui confirmar que ele ficou salvo. Atualize a página (F5) e confira antes de cadastrar de novo, pra não duplicar.");
+      return;
+    }
+
     document.getElementById("cb-nome").value = "";
     document.getElementById("cb-valor").value = "";
     document.getElementById("cb-parcelas").value = "12";
@@ -1057,7 +1069,18 @@
     document.getElementById("cb-cpf").value = "";
     document.getElementById("cb-corretor").value = "";
     cbNewForm.hidden = true;
-    loadAll();
+
+    // Limpa busca/filtros: se tiver algo ativo, o cliente novo pode ficar
+    // escondido na lista e parecer que não foi cadastrado.
+    state.cbSearchTerm = "";
+    state.cbFilterSeguradora = "";
+    state.cbFilterCorretor = "";
+    document.getElementById("cb-search").value = "";
+    document.getElementById("cb-filter-seguradora").value = "";
+    document.getElementById("cb-filter-corretor").value = "";
+
+    await loadAll();
+    alert('Cliente "' + nome + '" adicionado com sucesso.');
   });
 
   function openCbModal(clienteId) {
