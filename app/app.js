@@ -232,6 +232,7 @@
 
   var channel = null;
   function setupSubscriptions() {
+    teardownSubscriptions();
     channel = supabase.channel("db-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "vendedores" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "comissoes" }, loadAll)
