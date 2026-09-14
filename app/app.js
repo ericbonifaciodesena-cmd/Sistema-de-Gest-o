@@ -69,6 +69,17 @@
     alert("Erro: " + (err && err.message ? err.message : String(err)));
   }
 
+  // Evita que uma chamada ao Supabase fique travada para sempre sem
+  // avisar nada (ex: sessão presa após trocar de aba muitas vezes).
+  function comLimiteDeTempo(promessa, segundos) {
+    var aviso = new Promise(function (resolve) {
+      setTimeout(function () {
+        resolve({ error: { message: "A operação demorou demais e foi cancelada. Atualize a página (F5) e tente de novo." } });
+      }, segundos * 1000);
+    });
+    return Promise.race([promessa, aviso]);
+  }
+
   // ---- login ----
   var loginWrap = document.getElementById("login-wrap");
   var appWrap = document.getElementById("app-wrap");
@@ -133,6 +144,11 @@
       // recarregar a tela nem voltar pra aba padrão, senão apaga o que a
       // pessoa estava digitando. Só reinicia a UI em login de verdade.
       if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return;
+      // Voltar de outra aba pode disparar SIGNED_IN de novo pro mesmo
+      // usuário (recuperação de sessão), não só TOKEN_REFRESHED — se já
+      // tiver carregado esse mesmo usuário, não precisa refazer tudo
+      // (evita recriar a inscrição em tempo real e travas repetidas).
+      if (state.perfil && state.perfil.id === session.user.id) return;
       // Adiado: consultar o banco direto aqui trava a sincronização do
       // token de sessão do supabase-js (a lib ainda está com um lock
       // interno de auth durante esse callback).
@@ -1012,13 +1028,13 @@
     var seguradora = document.getElementById("cb-seguradora").value;
     var cpf = document.getElementById("cb-cpf").value.trim();
     var corretor = document.getElementById("cb-corretor").value;
-    var clienteRes = await supabase.from("cobranca_clientes").insert({
+    var clienteRes = await comLimiteDeTempo(supabase.from("cobranca_clientes").insert({
       nome: nome,
       forma: state.cbForma,
       seguradora: seguradora || null,
       cpf: cpf || null,
       corretor: corretor || null
-    }).select().single();
+    }).select().single(), 10);
     if (clienteRes.error) return reportError(clienteRes.error);
 
     var parcelasRows = [];
@@ -1031,7 +1047,7 @@
         status: "pendente"
       });
     }
-    var pRes = await supabase.from("parcelas").insert(parcelasRows);
+    var pRes = await comLimiteDeTempo(supabase.from("parcelas").insert(parcelasRows), 10);
     if (pRes.error) return reportError(pRes.error);
 
     document.getElementById("cb-nome").value = "";
