@@ -999,7 +999,15 @@
     var valor = parseFloat(document.getElementById("cb-valor").value);
     var dataIni = document.getElementById("cb-data").value;
     var numParcelas = parseInt(document.getElementById("cb-parcelas").value, 10);
-    if (!nome || isNaN(valor) || !dataIni || !numParcelas || numParcelas < 1) return;
+    var faltando = [];
+    if (!nome) faltando.push("Nome do cliente");
+    if (isNaN(valor)) faltando.push("Valor da parcela");
+    if (!dataIni) faltando.push("Data da primeira cobrança");
+    if (!numParcelas || numParcelas < 1) faltando.push("Número de parcelas");
+    if (faltando.length) {
+      alert("Preencha antes de adicionar: " + faltando.join(", ") + ".");
+      return;
+    }
 
     var seguradora = document.getElementById("cb-seguradora").value;
     var cpf = document.getElementById("cb-cpf").value.trim();
