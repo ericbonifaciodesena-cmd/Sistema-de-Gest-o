@@ -21,7 +21,7 @@
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
     cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
-    novaTarefaDrafts: {}, comissaoCardId: null,
+    novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null
   };
   // Exposto só pra dar pra inspecionar pelo console do navegador durante
@@ -794,12 +794,46 @@
 
       var mid = document.createElement("div");
       mid.className = "desc";
-      mid.textContent = t.descricao;
-      var resp = document.createElement("span");
-      resp.className = "resp";
-      resp.textContent = t.perfis ? t.perfis.nome : "";
-      mid.appendChild(resp);
-      row.appendChild(mid);
+
+      if (state.tarefaEditandoId === t.id) {
+        var editInput = document.createElement("input");
+        editInput.className = "task-edit-input";
+        editInput.value = t.descricao;
+        var salvarEdicao = async function () {
+          var novoTexto = editInput.value.trim();
+          state.tarefaEditandoId = null;
+          if (!novoTexto || novoTexto === t.descricao) { renderWeek(); return; }
+          var res = await supabase.from("tarefas").update({ descricao: novoTexto }).eq("id", t.id);
+          if (res.error) reportError(res.error); else loadAll();
+        };
+        editInput.addEventListener("blur", salvarEdicao);
+        editInput.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter") editInput.blur();
+          if (ev.key === "Escape") { state.tarefaEditandoId = null; renderWeek(); }
+        });
+        mid.appendChild(editInput);
+        row.appendChild(mid);
+        setTimeout(function () { editInput.focus(); editInput.select(); }, 0);
+      } else {
+        var descText = document.createElement("span");
+        descText.textContent = t.descricao;
+        mid.appendChild(descText);
+        var resp = document.createElement("span");
+        resp.className = "resp";
+        resp.textContent = t.perfis ? t.perfis.nome : "";
+        mid.appendChild(resp);
+        row.appendChild(mid);
+
+        var editBtn = document.createElement("button");
+        editBtn.className = "icon-btn task-edit-btn";
+        editBtn.textContent = "✎";
+        editBtn.title = "Editar tarefa";
+        editBtn.addEventListener("click", function () {
+          state.tarefaEditandoId = t.id;
+          renderWeek();
+        });
+        row.appendChild(editBtn);
+      }
 
       if (t.concluida) {
         var archBtn = document.createElement("button");
