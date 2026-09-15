@@ -48,6 +48,7 @@
     <div class="tabs" role="tablist">
       <button class="tab" id="tab-comissoes" role="tab" aria-selected="true">Comissões</button>
       <button class="tab" id="tab-tarefas" role="tab" aria-selected="false">Tarefas</button>
+      <button class="tab" id="tab-processos" role="tab" aria-selected="false">Processos</button>
       <button class="tab" id="tab-cobrancas" role="tab" aria-selected="false">Cobranças</button>
       <button class="tab" id="tab-crm" role="tab" aria-selected="false">CRM</button>
       <button class="tab" id="tab-conversor" role="tab" aria-selected="false">Conversor PDF</button>
@@ -73,6 +74,37 @@
           <thead><tr><th>Data</th><th>Dia</th><th>Tarefa</th><th>Responsável</th></tr></thead>
           <tbody id="history-body"></tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-processos">
+      <div id="processos-lista-view">
+        <div class="toolbar">
+          <span class="hint">Processos e documentos internos</span>
+          <button class="btn ghost" id="processos-add-raiz">+ novo processo</button>
+        </div>
+        <div id="processos-tree" class="processos-tree"></div>
+      </div>
+
+      <div id="processos-pagina-view" hidden>
+        <div class="processos-breadcrumb" id="processos-breadcrumb"></div>
+        <input id="processos-titulo-input" class="processos-title-input" placeholder="Sem título">
+
+        <label class="cb-label" style="margin-top:14px;">Conteúdo</label>
+        <textarea id="processos-conteudo" class="cb-input processos-conteudo" rows="10" placeholder="Escreva o processo/documento aqui..."></textarea>
+        <div class="cb-obs-actions">
+          <button class="btn small" id="processos-salvar">Salvar</button>
+          <span class="cb-obs-status" id="processos-salvar-status"></span>
+          <button class="btn ghost small" id="processos-excluir">Excluir página</button>
+        </div>
+
+        <div class="processos-subpaginas-wrap">
+          <div class="processos-subpaginas-head">
+            <span class="cb-label">Subpáginas</span>
+            <button class="btn ghost small" id="processos-add-sub">+ subpágina</button>
+          </div>
+          <div id="processos-subtree" class="processos-tree"></div>
+        </div>
       </div>
     </div>
 

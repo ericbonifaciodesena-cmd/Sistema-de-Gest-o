@@ -190,6 +190,23 @@ pode ser registrada pra hoje (uma nota) ou agendada pra uma data futura
 | concluida     | boolean   | marca quando a atividade agendada foi feita |
 | criado_em     | timestamp | |
 
+### Processo (base de documentos internos)
+Documentos e processos internos da empresa, organizados em páginas e
+subpáginas — igual ao Notion. `parent_id` nulo é página de raiz; apagar
+uma página apaga as subpáginas dela junto (cascade).
+
+| Campo      | Tipo      | Observação |
+|------------|-----------|------------|
+| id         | uuid      | chave primária |
+| titulo     | text      | |
+| conteudo   | text      | texto livre (anotações, procedimento, etc.) |
+| parent_id  | uuid (FK) | → Processo (a própria tabela); nulo = página de raiz |
+| ordem      | int       | ordem de exibição entre irmãos |
+| criado_em  | timestamp | |
+
+Só `admin` acessa (mesma regra de Comissões/Tarefas/CRM) — a Thais
+(papel `cobranca`) não vê essa aba.
+
 ## Relacionamentos
 
 ```
@@ -197,6 +214,7 @@ Perfil 1 ── N Tarefa                  (responsavel_id)
 Vendedor 1 ── N Comissão              (vendedor_id)
 Cliente de cobrança 1 ── N Parcela    (cliente_id)
 Negócio 1 ── N Cotação                (negocio_id)
+Processo 1 ── N Processo              (parent_id, subpáginas)
 Negócio 1 ── N Atividade              (negocio_id)
 Perfil 1 ── N Atividade               (autor_id)
 ```
@@ -204,8 +222,8 @@ Perfil 1 ── N Atividade               (autor_id)
 Perfil, Vendedor, Cliente de cobrança e Negócio não se relacionam entre si
 nesta fase — são cadastros de pessoas/registros com papéis totalmente
 diferentes. Acesso é protegido por Row Level Security:
-- **Comissões, Tarefas, Vendedores e CRM (negócios/cotações/atividades)**:
-  só usuários com papel `admin` (Eric e Pedro)
+- **Comissões, Tarefas, Vendedores, CRM (negócios/cotações/atividades) e
+  Processos**: só usuários com papel `admin` (Eric e Pedro)
 - **Cobrança**: qualquer usuário autenticado, `admin` ou `cobranca`
   (inclui a Thais)
 

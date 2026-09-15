@@ -157,6 +157,20 @@ insert into storage.buckets (id, name, public)
 values ('cotacoes', 'cotacoes', false)
 on conflict (id) do nothing;
 
+-- Processos: base de documentos/processos internos da empresa, em
+-- hierarquia (páginas e subpáginas), igual ao Notion. `parent_id` nulo
+-- é página de raiz; apagar uma página apaga as subpáginas dela junto.
+create table processos (
+    id          uuid primary key default gen_random_uuid(),
+    titulo      text not null default 'Sem título',
+    conteudo    text not null default '',
+    parent_id   uuid references processos(id) on delete cascade,
+    ordem       int not null default 0,
+    criado_em   timestamptz not null default now()
+);
+
+create index idx_processos_parent on processos(parent_id);
+
 -- RLS: comissões, tarefas e vendedores são só para `admin`. Cobrança
 -- (cliente + parcelas) é para qualquer usuário logado, admin ou
 -- `cobranca` — hoje isso é Eric, Pedro (admin) e Thais (cobranca).
@@ -201,3 +215,8 @@ create policy "admin acessa atividades" on atividades
 create policy "admin acessa bucket cotacoes" on storage.objects
     for all using (bucket_id = 'cotacoes' and current_papel() = 'admin')
     with check (bucket_id = 'cotacoes' and current_papel() = 'admin');
+
+alter table processos enable row level security;
+
+create policy "admin acessa processos" on processos
+    for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
