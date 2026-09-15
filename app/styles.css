@@ -265,6 +265,31 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
   display: flex; align-items: center; justify-content: center; margin-top: 1px;
 }
 
+/* Processos: visual escuro igual ao Notion (fonte e cores próprias, só
+   nessa aba — o resto do sistema mantém o tema normal). */
+#panel-processos {
+  background: #000000; color: #ffffff; border-radius: 14px; padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+#panel-processos .toolbar .hint { color: rgba(255, 255, 255, 0.5); }
+#panel-processos .btn.ghost {
+  background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15);
+}
+#panel-processos .btn.ghost:hover { background: rgba(255, 255, 255, 0.14); }
+#panel-processos .processos-row:hover { background: rgba(255, 255, 255, 0.06); }
+#panel-processos .processos-toggle { color: rgba(255, 255, 255, 0.45); }
+#panel-processos .processos-toggle:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+#panel-processos .processos-title-inline { color: #fff; }
+#panel-processos .processos-title-inline::placeholder { color: rgba(255, 255, 255, 0.35); }
+#panel-processos .processos-title-inline:focus { background: rgba(255, 255, 255, 0.08); }
+#panel-processos .icon-btn { color: rgba(255, 255, 255, 0.4); }
+#panel-processos .icon-btn:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+#panel-processos .processos-conteudo { color: rgba(255, 255, 255, 0.85); }
+#panel-processos .processos-conteudo::placeholder { color: rgba(255, 255, 255, 0.35); }
+#panel-processos .processos-conteudo:focus { background: rgba(255, 255, 255, 0.08); }
+#panel-processos .processos-empty { color: rgba(255, 255, 255, 0.4); }
+#panel-processos .cb-obs-status { color: #6fcf97; }
+
 .cb-modal-overlay {
   position: fixed; inset: 0; background: rgba(5,22,37,0.5); display: flex; align-items: center;
   justify-content: center; padding: 20px; z-index: 50;
