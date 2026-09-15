@@ -1763,6 +1763,9 @@
       body.className = "processos-body";
       body.style.paddingLeft = (depth * 20 + 26) + "px";
 
+      var conteudoRow = document.createElement("div");
+      conteudoRow.className = "processos-conteudo-row";
+
       var textarea = document.createElement("textarea");
       textarea.className = "processos-conteudo";
       textarea.rows = 1;
@@ -1772,23 +1775,26 @@
         textarea.style.height = "auto";
         textarea.style.height = (textarea.scrollHeight + 2) + "px";
       };
+      textarea.addEventListener("input", ajustarAltura);
       var statusEl = document.createElement("span");
       statusEl.className = "cb-obs-status";
-      textarea.addEventListener("input", ajustarAltura);
       textarea.addEventListener("blur", function () {
         if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
       });
-      body.appendChild(textarea);
+      conteudoRow.appendChild(textarea);
+
+      var addSubLink = document.createElement("button");
+      addSubLink.className = "processos-add-sub-link";
+      addSubLink.textContent = "+ toggle";
+      addSubLink.title = "Adicionar sub-tópico (toggle)";
+      addSubLink.addEventListener("click", function () { processosCriar(p.id); });
+      conteudoRow.appendChild(addSubLink);
+
+      body.appendChild(conteudoRow);
       body.appendChild(statusEl);
       setTimeout(ajustarAltura, 0);
 
       processosFilhos(p.id).forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
-
-      var addSubLink = document.createElement("button");
-      addSubLink.className = "processos-add-sub-link";
-      addSubLink.textContent = "+ adicionar sub-tópico";
-      addSubLink.addEventListener("click", function () { processosCriar(p.id); });
-      body.appendChild(addSubLink);
 
       wrap.appendChild(body);
     }
