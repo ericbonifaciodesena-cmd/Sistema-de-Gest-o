@@ -1217,10 +1217,30 @@
   cbModalOverlay.addEventListener("click", function (ev) { if (ev.target === cbModalOverlay) closeCbModal(); });
 
   var cbModalObs = document.getElementById("cb-modal-obs");
-  cbModalObs.addEventListener("blur", async function () {
-    if (!state.cbModalClienteId) return;
-    await supabase.from("cobranca_clientes").update({ observacoes: cbModalObs.value }).eq("id", state.cbModalClienteId);
-  });
+  var cbModalObsStatus = document.getElementById("cb-modal-obs-status");
+  var cbSalvandoObs = false;
+  async function salvarObservacoes() {
+    if (!state.cbModalClienteId || cbSalvandoObs) return;
+    cbSalvandoObs = true;
+    var clienteId = state.cbModalClienteId;
+    var texto = cbModalObs.value;
+    cbModalObsStatus.textContent = "Salvando...";
+    var res = await comLimiteDeTempo(
+      supabase.from("cobranca_clientes").update({ observacoes: texto }).eq("id", clienteId),
+      10
+    );
+    cbSalvandoObs = false;
+    if (res.error) {
+      cbModalObsStatus.textContent = "";
+      reportError(res.error);
+      return;
+    }
+    await loadAll();
+    cbModalObsStatus.textContent = "Salvo.";
+    setTimeout(function () { if (cbModalObsStatus.textContent === "Salvo.") cbModalObsStatus.textContent = ""; }, 2500);
+  }
+  cbModalObs.addEventListener("blur", salvarObservacoes);
+  document.getElementById("cb-modal-obs-salvar").addEventListener("click", salvarObservacoes);
 
   function cbBindClienteField(elId, campo, eventName) {
     var el = document.getElementById(elId);
