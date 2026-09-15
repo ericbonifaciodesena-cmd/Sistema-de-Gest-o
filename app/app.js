@@ -1731,7 +1731,6 @@
     var toggle = document.createElement("button");
     toggle.className = "processos-toggle";
     toggle.textContent = expandido ? "▾" : "▸";
-    toggle.title = expandido ? "Recolher" : "Expandir";
     toggle.addEventListener("click", function () {
       state.processosExpandidos[p.id] = !expandido;
       renderProcessos();
@@ -1752,7 +1751,6 @@
     var delBtn = document.createElement("button");
     delBtn.className = "icon-btn processos-del";
     delBtn.textContent = "✕";
-    delBtn.title = "Excluir";
     delBtn.addEventListener("click", function () { processosExcluir(p); });
     row.appendChild(delBtn);
 
