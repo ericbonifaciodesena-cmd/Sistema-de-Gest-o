@@ -1802,15 +1802,6 @@
 
       filhosAtuais.forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
 
-      if (filhosAtuais.length) {
-        var addMaisBtn = document.createElement("button");
-        addMaisBtn.className = "icon-btn processos-add-toggle-btn";
-        addMaisBtn.style.marginLeft = ((depth + 1) * 20 + 4) + "px";
-        addMaisBtn.textContent = "+";
-        addMaisBtn.addEventListener("click", function () { processosCriar(p.id); });
-        body.appendChild(addMaisBtn);
-      }
-
       wrap.appendChild(body);
     }
 
