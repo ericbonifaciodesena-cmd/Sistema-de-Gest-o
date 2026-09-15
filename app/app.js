@@ -1749,15 +1749,8 @@
     titleInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") titleInput.blur(); });
     row.appendChild(titleInput);
 
-    var addSubBtn = document.createElement("button");
-    addSubBtn.className = "icon-btn";
-    addSubBtn.textContent = "+";
-    addSubBtn.title = "Nova subpágina";
-    addSubBtn.addEventListener("click", function () { processosCriar(p.id); });
-    row.appendChild(addSubBtn);
-
     var delBtn = document.createElement("button");
-    delBtn.className = "icon-btn";
+    delBtn.className = "icon-btn processos-del";
     delBtn.textContent = "✕";
     delBtn.title = "Excluir";
     delBtn.addEventListener("click", function () { processosExcluir(p); });
@@ -1768,22 +1761,34 @@
     if (expandido) {
       var body = document.createElement("div");
       body.className = "processos-body";
-      body.style.paddingLeft = (depth * 20 + 22) + "px";
+      body.style.paddingLeft = (depth * 20 + 26) + "px";
 
       var textarea = document.createElement("textarea");
-      textarea.className = "cb-input processos-conteudo";
-      textarea.rows = 4;
+      textarea.className = "processos-conteudo";
+      textarea.rows = 1;
       textarea.placeholder = "Escreva aqui...";
       textarea.value = p.conteudo || "";
+      var ajustarAltura = function () {
+        textarea.style.height = "auto";
+        textarea.style.height = (textarea.scrollHeight + 2) + "px";
+      };
       var statusEl = document.createElement("span");
       statusEl.className = "cb-obs-status";
+      textarea.addEventListener("input", ajustarAltura);
       textarea.addEventListener("blur", function () {
         if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
       });
       body.appendChild(textarea);
       body.appendChild(statusEl);
+      setTimeout(ajustarAltura, 0);
 
       processosFilhos(p.id).forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
+
+      var addSubLink = document.createElement("button");
+      addSubLink.className = "processos-add-sub-link";
+      addSubLink.textContent = "+ adicionar sub-tópico";
+      addSubLink.addEventListener("click", function () { processosCriar(p.id); });
+      body.appendChild(addSubLink);
 
       wrap.appendChild(body);
     }
