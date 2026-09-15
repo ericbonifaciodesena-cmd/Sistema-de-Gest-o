@@ -23,7 +23,7 @@
     cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
     novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
-    processos: [], processoAberto: null, processosExpandidos: {}
+    processos: [], processosExpandidos: {}
   };
   // Exposto só pra dar pra inspecionar pelo console do navegador durante
   // depuração (window.__debug.state...). Não expõe nada que já não
@@ -1667,15 +1667,8 @@
     });
   }
 
-  // ---- processos (documentos internos, hierarquia estilo Notion) ----
-  var processosListaView = document.getElementById("processos-lista-view");
-  var processosPaginaView = document.getElementById("processos-pagina-view");
+  // ---- processos (toggle list de documentos internos, estilo Notion) ----
   var processosTreeEl = document.getElementById("processos-tree");
-  var processosSubtreeEl = document.getElementById("processos-subtree");
-  var processosBreadcrumbEl = document.getElementById("processos-breadcrumb");
-  var processosTituloInput = document.getElementById("processos-titulo-input");
-  var processosConteudoInput = document.getElementById("processos-conteudo");
-  var processosSalvarStatus = document.getElementById("processos-salvar-status");
 
   function processosFilhos(parentId) {
     return state.processos
@@ -1688,14 +1681,14 @@
 
   async function processosCriar(parentId) {
     var res = await supabase.from("processos").insert({
-      titulo: "Sem título",
+      titulo: "",
       conteudo: "",
       parent_id: parentId,
       ordem: processosFilhos(parentId).length
     }).select().single();
     if (res.error) return reportError(res.error);
     if (parentId) state.processosExpandidos[parentId] = true;
-    state.processoAberto = res.data.id;
+    state.processosExpandidos[res.data.id] = true;
     await loadAll();
   }
 
@@ -1705,144 +1698,112 @@
     if (!confirm(aviso)) return;
     var res = await supabase.from("processos").delete().eq("id", p.id);
     if (res.error) return reportError(res.error);
-    if (state.processoAberto === p.id) state.processoAberto = p.parent_id;
     await loadAll();
   }
 
-  function processosAbrir(id) {
-    state.processoAberto = id;
-    renderProcessos();
+  async function processosSalvarCampo(id, campo, valor, statusEl) {
+    if (statusEl) statusEl.textContent = "Salvando...";
+    var res = await comLimiteDeTempo(
+      supabase.from("processos").update(Object.fromEntries([[campo, valor]])).eq("id", id),
+      10
+    );
+    if (res.error) {
+      if (statusEl) statusEl.textContent = "";
+      reportError(res.error);
+      return;
+    }
+    await loadAll();
+    if (statusEl) {
+      statusEl.textContent = "Salvo.";
+      setTimeout(function () { if (statusEl.textContent === "Salvo.") statusEl.textContent = ""; }, 2500);
+    }
   }
 
-  function renderProcessosRow(p, depth) {
+  function renderProcessoItem(p, depth) {
+    var wrap = document.createElement("div");
+    wrap.className = "processo-item";
+
     var row = document.createElement("div");
     row.className = "processos-row";
-    row.style.paddingLeft = (depth * 18) + "px";
+    row.style.paddingLeft = (depth * 20) + "px";
 
-    var filhos = processosFilhos(p.id);
     var expandido = !!state.processosExpandidos[p.id];
-
     var toggle = document.createElement("button");
-    toggle.className = "processos-toggle" + (filhos.length ? "" : " invisivel");
+    toggle.className = "processos-toggle";
     toggle.textContent = expandido ? "▾" : "▸";
+    toggle.title = expandido ? "Recolher" : "Expandir";
     toggle.addEventListener("click", function () {
       state.processosExpandidos[p.id] = !expandido;
       renderProcessos();
     });
     row.appendChild(toggle);
 
-    var titleBtn = document.createElement("button");
-    titleBtn.className = "processos-title-btn";
-    titleBtn.textContent = p.titulo || "Sem título";
-    titleBtn.addEventListener("click", function () { processosAbrir(p.id); });
-    row.appendChild(titleBtn);
+    var titleInput = document.createElement("input");
+    titleInput.className = "processos-title-inline";
+    titleInput.value = p.titulo || "";
+    titleInput.placeholder = "Sem título";
+    titleInput.addEventListener("blur", function () {
+      var novo = titleInput.value.trim();
+      if (novo !== (p.titulo || "")) processosSalvarCampo(p.id, "titulo", novo, null);
+    });
+    titleInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") titleInput.blur(); });
+    row.appendChild(titleInput);
+
+    var addSubBtn = document.createElement("button");
+    addSubBtn.className = "icon-btn";
+    addSubBtn.textContent = "+";
+    addSubBtn.title = "Nova subpágina";
+    addSubBtn.addEventListener("click", function () { processosCriar(p.id); });
+    row.appendChild(addSubBtn);
 
     var delBtn = document.createElement("button");
-    delBtn.className = "processos-row-del";
+    delBtn.className = "icon-btn";
     delBtn.textContent = "✕";
     delBtn.title = "Excluir";
-    delBtn.addEventListener("click", function (ev) { ev.stopPropagation(); processosExcluir(p); });
+    delBtn.addEventListener("click", function () { processosExcluir(p); });
     row.appendChild(delBtn);
 
-    var wrap = document.createElement("div");
     wrap.appendChild(row);
 
-    if (expandido && filhos.length) {
-      filhos.forEach(function (filho) { wrap.appendChild(renderProcessosRow(filho, depth + 1)); });
+    if (expandido) {
+      var body = document.createElement("div");
+      body.className = "processos-body";
+      body.style.paddingLeft = (depth * 20 + 22) + "px";
+
+      var textarea = document.createElement("textarea");
+      textarea.className = "cb-input processos-conteudo";
+      textarea.rows = 4;
+      textarea.placeholder = "Escreva aqui...";
+      textarea.value = p.conteudo || "";
+      var statusEl = document.createElement("span");
+      statusEl.className = "cb-obs-status";
+      textarea.addEventListener("blur", function () {
+        if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
+      });
+      body.appendChild(textarea);
+      body.appendChild(statusEl);
+
+      processosFilhos(p.id).forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
+
+      wrap.appendChild(body);
     }
+
     return wrap;
   }
 
-  function renderProcessosArvore(container, parentId) {
-    container.innerHTML = "";
-    var raiz = processosFilhos(parentId);
+  document.getElementById("processos-add-raiz").addEventListener("click", function () { processosCriar(null); });
+
+  function renderProcessos() {
+    processosTreeEl.innerHTML = "";
+    var raiz = processosFilhos(null);
     if (!raiz.length) {
       var vazio = document.createElement("div");
       vazio.className = "processos-empty";
-      vazio.textContent = "Nenhuma página ainda.";
-      container.appendChild(vazio);
+      vazio.textContent = 'Nenhum processo ainda. Clique em "+ novo processo" pra começar.';
+      processosTreeEl.appendChild(vazio);
       return;
     }
-    raiz.forEach(function (p) { container.appendChild(renderProcessosRow(p, 0)); });
-  }
-
-  function renderProcessosBreadcrumb(p) {
-    var trilha = [];
-    var atual = p;
-    while (atual) {
-      trilha.unshift(atual);
-      atual = atual.parent_id ? state.processos.find(function (x) { return x.id === atual.parent_id; }) : null;
-    }
-    processosBreadcrumbEl.innerHTML = "";
-    var raizBtn = document.createElement("button");
-    raizBtn.textContent = "Processos";
-    raizBtn.addEventListener("click", function () { state.processoAberto = null; renderProcessos(); });
-    processosBreadcrumbEl.appendChild(raizBtn);
-    trilha.forEach(function (item) {
-      processosBreadcrumbEl.appendChild(document.createTextNode(" / "));
-      if (item.id === p.id) {
-        var atualSpan = document.createElement("span");
-        atualSpan.textContent = item.titulo || "Sem título";
-        processosBreadcrumbEl.appendChild(atualSpan);
-      } else {
-        var itemBtn = document.createElement("button");
-        itemBtn.textContent = item.titulo || "Sem título";
-        itemBtn.addEventListener("click", function () { processosAbrir(item.id); });
-        processosBreadcrumbEl.appendChild(itemBtn);
-      }
-    });
-  }
-
-  var processosSalvando = false;
-  async function processosSalvar() {
-    if (!state.processoAberto || processosSalvando) return;
-    processosSalvando = true;
-    processosSalvarStatus.textContent = "Salvando...";
-    var res = await comLimiteDeTempo(
-      supabase.from("processos").update({
-        titulo: processosTituloInput.value.trim() || "Sem título",
-        conteudo: processosConteudoInput.value
-      }).eq("id", state.processoAberto),
-      10
-    );
-    processosSalvando = false;
-    if (res.error) {
-      processosSalvarStatus.textContent = "";
-      reportError(res.error);
-      return;
-    }
-    await loadAll();
-    processosSalvarStatus.textContent = "Salvo.";
-    setTimeout(function () { if (processosSalvarStatus.textContent === "Salvo.") processosSalvarStatus.textContent = ""; }, 2500);
-  }
-  document.getElementById("processos-salvar").addEventListener("click", processosSalvar);
-  processosTituloInput.addEventListener("blur", processosSalvar);
-  processosConteudoInput.addEventListener("blur", processosSalvar);
-  document.getElementById("processos-add-raiz").addEventListener("click", function () { processosCriar(null); });
-  document.getElementById("processos-add-sub").addEventListener("click", function () {
-    if (state.processoAberto) processosCriar(state.processoAberto);
-  });
-  document.getElementById("processos-excluir").addEventListener("click", function () {
-    var p = state.processos.find(function (x) { return x.id === state.processoAberto; });
-    if (p) processosExcluir(p);
-  });
-
-  function renderProcessos() {
-    var p = state.processoAberto ? state.processos.find(function (x) { return x.id === state.processoAberto; }) : null;
-    if (!p) {
-      state.processoAberto = null;
-      processosListaView.hidden = false;
-      processosPaginaView.hidden = true;
-      renderProcessosArvore(processosTreeEl, null);
-      return;
-    }
-    processosListaView.hidden = true;
-    processosPaginaView.hidden = false;
-    renderProcessosBreadcrumb(p);
-    if (document.activeElement !== processosTituloInput) processosTituloInput.value = p.titulo === "Sem título" ? "" : p.titulo;
-    processosTituloInput.placeholder = "Sem título";
-    if (document.activeElement !== processosConteudoInput) processosConteudoInput.value = p.conteudo || "";
-    renderProcessosArvore(processosSubtreeEl, p.id);
+    raiz.forEach(function (p) { processosTreeEl.appendChild(renderProcessoItem(p, 0)); });
   }
 
   function renderAll() {
