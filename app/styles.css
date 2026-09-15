@@ -260,12 +260,10 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
   border-radius: 4px; transition: background 0.12s ease; flex: 1; min-width: 0;
 }
 .processos-conteudo:focus { outline: none; background: var(--surface-2); }
-.processos-add-sub-link {
-  flex-shrink: 0; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
-  font-size: 12px; cursor: pointer; padding: 4px 10px; border-radius: 6px; margin-top: 2px;
-  transition: background 0.12s ease, color 0.12s ease;
+.processos-add-toggle-btn {
+  flex-shrink: 0; font-size: 16px; font-weight: 600; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center; margin-top: 1px;
 }
-.processos-add-sub-link:hover { background: var(--surface); color: var(--ink); border-color: var(--accent); }
 
 .cb-modal-overlay {
   position: fixed; inset: 0; background: rgba(5,22,37,0.5); display: flex; align-items: center;

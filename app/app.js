@@ -1763,38 +1763,57 @@
       body.className = "processos-body";
       body.style.paddingLeft = (depth * 20 + 26) + "px";
 
-      var conteudoRow = document.createElement("div");
-      conteudoRow.className = "processos-conteudo-row";
+      var filhosAtuais = processosFilhos(p.id);
+      var temTexto = !!(p.conteudo && p.conteudo.length);
+      // Sem texto e já virou toggle (tem subitem): esconde a linha de
+      // "escreva aqui" vazia — ela já "virou" o toggle, não fica parada
+      // ali empurrando o conteúdo pra baixo.
+      var mostrarEscrever = temTexto || !filhosAtuais.length;
 
-      var textarea = document.createElement("textarea");
-      textarea.className = "processos-conteudo";
-      textarea.rows = 1;
-      textarea.placeholder = "Escreva aqui...";
-      textarea.value = p.conteudo || "";
-      var ajustarAltura = function () {
-        textarea.style.height = "auto";
-        textarea.style.height = (textarea.scrollHeight + 2) + "px";
-      };
-      textarea.addEventListener("input", ajustarAltura);
-      var statusEl = document.createElement("span");
-      statusEl.className = "cb-obs-status";
-      textarea.addEventListener("blur", function () {
-        if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
-      });
-      conteudoRow.appendChild(textarea);
+      if (mostrarEscrever) {
+        var conteudoRow = document.createElement("div");
+        conteudoRow.className = "processos-conteudo-row";
 
-      var addSubLink = document.createElement("button");
-      addSubLink.className = "processos-add-sub-link";
-      addSubLink.textContent = "+ toggle";
-      addSubLink.title = "Adicionar sub-tópico (toggle)";
-      addSubLink.addEventListener("click", function () { processosCriar(p.id); });
-      conteudoRow.appendChild(addSubLink);
+        var addBtn = document.createElement("button");
+        addBtn.className = "icon-btn processos-add-toggle-btn";
+        addBtn.textContent = "+";
+        addBtn.title = "Virar sub-tópico (toggle)";
+        addBtn.addEventListener("click", function () { processosCriar(p.id); });
+        conteudoRow.appendChild(addBtn);
 
-      body.appendChild(conteudoRow);
-      body.appendChild(statusEl);
-      setTimeout(ajustarAltura, 0);
+        var textarea = document.createElement("textarea");
+        textarea.className = "processos-conteudo";
+        textarea.rows = 1;
+        textarea.placeholder = "Escreva aqui...";
+        textarea.value = p.conteudo || "";
+        var ajustarAltura = function () {
+          textarea.style.height = "auto";
+          textarea.style.height = (textarea.scrollHeight + 2) + "px";
+        };
+        textarea.addEventListener("input", ajustarAltura);
+        var statusEl = document.createElement("span");
+        statusEl.className = "cb-obs-status";
+        textarea.addEventListener("blur", function () {
+          if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
+        });
+        conteudoRow.appendChild(textarea);
 
-      processosFilhos(p.id).forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
+        body.appendChild(conteudoRow);
+        body.appendChild(statusEl);
+        setTimeout(ajustarAltura, 0);
+      }
+
+      filhosAtuais.forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
+
+      if (filhosAtuais.length) {
+        var addMaisBtn = document.createElement("button");
+        addMaisBtn.className = "icon-btn processos-add-toggle-btn";
+        addMaisBtn.style.marginLeft = ((depth + 1) * 20 + 4) + "px";
+        addMaisBtn.textContent = "+";
+        addMaisBtn.title = "Novo sub-tópico";
+        addMaisBtn.addEventListener("click", function () { processosCriar(p.id); });
+        body.appendChild(addMaisBtn);
+      }
 
       wrap.appendChild(body);
     }
