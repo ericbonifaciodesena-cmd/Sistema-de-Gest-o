@@ -1777,7 +1777,6 @@
         var addBtn = document.createElement("button");
         addBtn.className = "icon-btn processos-add-toggle-btn";
         addBtn.textContent = "+";
-        addBtn.title = "Virar sub-tópico (toggle)";
         addBtn.addEventListener("click", function () { processosCriar(p.id); });
         conteudoRow.appendChild(addBtn);
 
@@ -1810,7 +1809,6 @@
         addMaisBtn.className = "icon-btn processos-add-toggle-btn";
         addMaisBtn.style.marginLeft = ((depth + 1) * 20 + 4) + "px";
         addMaisBtn.textContent = "+";
-        addMaisBtn.title = "Novo sub-tópico";
         addMaisBtn.addEventListener("click", function () { processosCriar(p.id); });
         body.appendChild(addMaisBtn);
       }
