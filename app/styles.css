@@ -132,8 +132,7 @@ table.commissions td.val { text-align: right; }
 .new-row input, .new-row select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); font-family: inherit; min-width: 0; }
 .new-row input.val { font-family: "IBM Plex Mono", monospace; }
 
-.tarefas-board { display: flex; gap: 18px; align-items: flex-start; }
-.week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; flex: 1; min-width: 0; }
+.week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
 .day-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 220px; }
 
 .tarefas-calendar {
@@ -154,7 +153,7 @@ table.commissions td.val { text-align: right; }
 .tarefas-cal-day.is-semana { background: var(--surface-2); }
 .tarefas-cal-day.is-hoje { font-weight: 700; color: var(--accent); }
 .tarefas-cal-day.is-selecionado { background: var(--accent); color: #fff; }
-@media (max-width: 860px) { .tarefas-board { flex-direction: column; } .tarefas-calendar { width: 100%; } }
+@media (max-width: 860px) { #panel-tarefas.active { flex-direction: column; } .tarefas-calendar { width: 100%; } }
 .day-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
 .day-head .dname { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
 .day-head .ddate { font-size: 11px; color: var(--muted); }
@@ -312,11 +311,14 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 #panel-processos .processos-empty { color: rgba(255, 255, 255, 0.4); }
 #panel-processos .cb-obs-status { color: #6fcf97; }
 
-/* Tarefas: mesmo visual preto e branco do Notion usado em Processos. */
+/* Tarefas: mesmo visual preto e branco do Notion usado em Processos.
+   O calendário fica fora da caixa principal, como uma caixa própria ao lado. */
+#panel-tarefas.active { display: flex; gap: 18px; align-items: flex-start; }
 #panel-tarefas {
-  background: #000000; color: #ffffff; border-radius: 14px; padding: 24px;
+  color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
+.tarefas-panel-inner { background: #000000; border-radius: 14px; padding: 24px; flex: 1; min-width: 0; }
 #panel-tarefas .btn.ghost {
   background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15);
 }
