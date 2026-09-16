@@ -806,9 +806,15 @@
       mid.className = "desc";
 
       if (state.tarefaEditandoId === t.id) {
-        var editInput = document.createElement("input");
+        var editInput = document.createElement("textarea");
         editInput.className = "task-edit-input";
+        editInput.rows = 1;
         editInput.value = t.descricao;
+        var ajustarAlturaEdit = function () {
+          editInput.style.height = "auto";
+          editInput.style.height = (editInput.scrollHeight + 2) + "px";
+        };
+        editInput.addEventListener("input", ajustarAlturaEdit);
         var salvarEdicao = async function () {
           var novoTexto = editInput.value.trim();
           state.tarefaEditandoId = null;
@@ -818,12 +824,12 @@
         };
         editInput.addEventListener("blur", salvarEdicao);
         editInput.addEventListener("keydown", function (ev) {
-          if (ev.key === "Enter") editInput.blur();
+          if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); editInput.blur(); }
           if (ev.key === "Escape") { state.tarefaEditandoId = null; renderWeek(); }
         });
         mid.appendChild(editInput);
         row.appendChild(mid);
-        setTimeout(function () { editInput.focus(); editInput.select(); }, 0);
+        setTimeout(function () { editInput.focus(); editInput.select(); ajustarAlturaEdit(); }, 0);
       } else {
         var descText = document.createElement("span");
         descText.textContent = t.descricao;
