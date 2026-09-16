@@ -1762,43 +1762,36 @@
       body.style.paddingLeft = (depth * 20 + 26) + "px";
 
       var filhosAtuais = processosFilhos(p.id);
-      var temTexto = !!(p.conteudo && p.conteudo.length);
-      // Sem texto e já virou toggle (tem subitem): esconde a linha de
-      // "escreva aqui" vazia — ela já "virou" o toggle, não fica parada
-      // ali empurrando o conteúdo pra baixo.
-      var mostrarEscrever = temTexto || !filhosAtuais.length;
 
-      if (mostrarEscrever) {
-        var conteudoRow = document.createElement("div");
-        conteudoRow.className = "processos-conteudo-row";
+      var conteudoRow = document.createElement("div");
+      conteudoRow.className = "processos-conteudo-row";
 
-        var addBtn = document.createElement("button");
-        addBtn.className = "icon-btn processos-add-toggle-btn";
-        addBtn.textContent = "+";
-        addBtn.addEventListener("click", function () { processosCriar(p.id); });
-        conteudoRow.appendChild(addBtn);
+      var addBtn = document.createElement("button");
+      addBtn.className = "icon-btn processos-add-toggle-btn";
+      addBtn.textContent = "+";
+      addBtn.addEventListener("click", function () { processosCriar(p.id); });
+      conteudoRow.appendChild(addBtn);
 
-        var textarea = document.createElement("textarea");
-        textarea.className = "processos-conteudo";
-        textarea.rows = 1;
-        textarea.placeholder = "Escreva aqui...";
-        textarea.value = p.conteudo || "";
-        var ajustarAltura = function () {
-          textarea.style.height = "auto";
-          textarea.style.height = (textarea.scrollHeight + 2) + "px";
-        };
-        textarea.addEventListener("input", ajustarAltura);
-        var statusEl = document.createElement("span");
-        statusEl.className = "cb-obs-status";
-        textarea.addEventListener("blur", function () {
-          if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
-        });
-        conteudoRow.appendChild(textarea);
+      var textarea = document.createElement("textarea");
+      textarea.className = "processos-conteudo";
+      textarea.rows = 1;
+      textarea.placeholder = "Escreva aqui...";
+      textarea.value = p.conteudo || "";
+      var ajustarAltura = function () {
+        textarea.style.height = "auto";
+        textarea.style.height = (textarea.scrollHeight + 2) + "px";
+      };
+      textarea.addEventListener("input", ajustarAltura);
+      var statusEl = document.createElement("span");
+      statusEl.className = "cb-obs-status";
+      textarea.addEventListener("blur", function () {
+        if (textarea.value !== (p.conteudo || "")) processosSalvarCampo(p.id, "conteudo", textarea.value, statusEl);
+      });
+      conteudoRow.appendChild(textarea);
 
-        body.appendChild(conteudoRow);
-        body.appendChild(statusEl);
-        setTimeout(ajustarAltura, 0);
-      }
+      body.appendChild(conteudoRow);
+      body.appendChild(statusEl);
+      setTimeout(ajustarAltura, 0);
 
       filhosAtuais.forEach(function (filho) { body.appendChild(renderProcessoItem(filho, depth + 1)); });
 
