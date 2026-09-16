@@ -226,6 +226,7 @@
     tabConversor.setAttribute("aria-selected", String(which === "conversor"));
     panelComissoes.classList.toggle("active", which === "comissoes");
     panelTarefas.classList.toggle("active", which === "tarefas");
+    document.getElementById("tarefas-calendar").classList.toggle("active", which === "tarefas");
     panelProcessos.classList.toggle("active", which === "processos");
     panelCobrancas.classList.toggle("active", which === "cobrancas");
     panelCrm.classList.toggle("active", which === "crm");

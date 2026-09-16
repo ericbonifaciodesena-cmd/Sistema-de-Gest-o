@@ -132,14 +132,18 @@ table.commissions td.val { text-align: right; }
 .new-row input, .new-row select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink); font-family: inherit; min-width: 0; }
 .new-row input.val { font-family: "IBM Plex Mono", monospace; }
 
-.week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
-.day-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 220px; }
+.app-body { display: flex; align-items: flex-start; gap: 18px; }
+.app-panels { flex: 1; min-width: 0; }
 
-/* Fica fora da caixa preta de Tarefas, encostada à esquerda dela. */
+.week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.day-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 220px; min-width: 0; }
+
+/* Fica fora da caixa preta de Tarefas, como coluna própria ao lado dela. */
 .tarefas-calendar {
-  position: absolute; right: 100%; top: 0; margin-right: 18px;
-  width: 220px; background: #000000; border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 220px; flex-shrink: 0;
+  background: #000000; border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px; padding: 12px; color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 .tarefas-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .tarefas-cal-title { font-weight: 700; font-size: 13px; text-transform: capitalize; }
@@ -155,8 +159,9 @@ table.commissions td.val { text-align: right; }
 .tarefas-cal-day.is-semana { background: var(--surface-2); }
 .tarefas-cal-day.is-hoje { font-weight: 700; color: var(--accent); }
 .tarefas-cal-day.is-selecionado { background: var(--accent); color: #fff; }
-@media (max-width: 1460px) {
-  .tarefas-calendar { position: static; width: auto; margin: 0 0 18px; }
+@media (max-width: 900px) {
+  .app-body { flex-direction: column; }
+  .tarefas-calendar { width: 100%; }
 }
 .day-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
 .day-head .dname { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -164,7 +169,7 @@ table.commissions td.val { text-align: right; }
 .day-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .task { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 8px; font-size: 13px; }
 .task input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); }
-.task .desc { flex: 1; line-height: 1.35; }
+.task .desc { flex: 1; line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
 .task.done .desc { text-decoration: line-through; color: var(--muted); }
 .task .resp { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
 .task .archive-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; font-size: 10px; padding: 2px 6px; cursor: pointer; white-space: nowrap; }
@@ -317,7 +322,6 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 
 /* Tarefas: mesmo visual preto e branco do Notion usado em Processos. */
 #panel-tarefas {
-  position: relative;
   background: #000000; color: #ffffff; border-radius: 14px; padding: 24px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
@@ -352,13 +356,19 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
   color: rgba(255, 255, 255, 0.5); border-bottom: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.05);
 }
 #panel-tarefas table.history td { color: #fff; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-#panel-tarefas .tarefas-cal-title { color: #fff; }
-#panel-tarefas .tarefas-cal-wd { color: rgba(255, 255, 255, 0.4); }
-#panel-tarefas .tarefas-cal-day { color: #fff; }
-#panel-tarefas .tarefas-cal-day:hover { background: rgba(255, 255, 255, 0.1); }
-#panel-tarefas .tarefas-cal-day.is-semana { background: rgba(255, 255, 255, 0.1); }
-#panel-tarefas .tarefas-cal-day.is-hoje { color: #6fcf97; }
-#panel-tarefas .tarefas-cal-day.is-selecionado { background: #fff; color: #000; }
+.tarefas-calendar .tarefas-cal-title { color: #fff; }
+.tarefas-calendar .tarefas-cal-wd { color: rgba(255, 255, 255, 0.4); }
+.tarefas-calendar .tarefas-cal-day { color: #fff; }
+.tarefas-calendar .tarefas-cal-day:hover { background: rgba(255, 255, 255, 0.1); }
+.tarefas-calendar .tarefas-cal-day.is-semana { background: rgba(255, 255, 255, 0.1); }
+.tarefas-calendar .tarefas-cal-day.is-hoje { color: #6fcf97; }
+.tarefas-calendar .tarefas-cal-day.is-selecionado { background: #fff; color: #000; }
+.tarefas-calendar .btn.ghost {
+  background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.tarefas-calendar .btn.ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.tarefas-calendar .icon-btn { color: rgba(255, 255, 255, 0.6); }
+.tarefas-calendar .icon-btn:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
 
 .cb-modal-overlay {
   position: fixed; inset: 0; background: rgba(5,22,37,0.5); display: flex; align-items: center;
