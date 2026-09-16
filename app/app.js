@@ -23,7 +23,8 @@
     cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
     novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
-    processos: [], processosExpandidos: {}
+    processos: [], processosExpandidos: {},
+    tarefasAncora: todayISO(), tarefasCalendarMes: null
   };
   // Exposto só pra dar pra inspecionar pelo console do navegador durante
   // depuração (window.__debug.state...). Não expõe nada que já não
@@ -54,8 +55,8 @@
     d.setDate(d.getDate() + (offsetDays || 0));
     return d.toISOString().slice(0, 10);
   }
-  function mondayOfThisWeek() {
-    var d = new Date();
+  function mondayOf(d) {
+    d = new Date(d);
     var dow = d.getDay();
     var diff = dow === 0 ? -6 : 1 - dow;
     d.setDate(d.getDate() + diff);
@@ -72,7 +73,7 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
   function weekDates() {
-    var mon = mondayOfThisWeek();
+    var mon = mondayOf(new Date(state.tarefasAncora + "T00:00:00"));
     var out = [];
     for (var i = 0; i < 5; i++) {
       var d = new Date(mon);
@@ -759,6 +760,92 @@
     historyBtn.textContent = showingHistory ? "Ver quadro da semana" : "Ver histórico";
     if (showingHistory) renderHistory();
   });
+
+  var tarefasCalendarEl = document.getElementById("tarefas-calendar");
+  var MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+  function renderTarefasCalendar() {
+    if (!tarefasCalendarEl) return;
+    var ancora = new Date(state.tarefasAncora + "T00:00:00");
+    var mesRef = state.tarefasCalendarMes ? new Date(state.tarefasCalendarMes + "T00:00:00") : new Date(ancora.getFullYear(), ancora.getMonth(), 1);
+    var ano = mesRef.getFullYear(), mes = mesRef.getMonth();
+
+    var monSemanaAtual = mondayOf(ancora).toISOString().slice(0, 10);
+    var semanaAtualIsos = weekDates();
+
+    tarefasCalendarEl.innerHTML = "";
+
+    var header = document.createElement("div");
+    header.className = "tarefas-cal-header";
+    var prevBtn = document.createElement("button");
+    prevBtn.className = "icon-btn tarefas-cal-nav";
+    prevBtn.textContent = "‹";
+    prevBtn.addEventListener("click", function () {
+      var d = new Date(ano, mes - 1, 1);
+      state.tarefasCalendarMes = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
+      renderTarefasCalendar();
+    });
+    var titulo = document.createElement("span");
+    titulo.className = "tarefas-cal-title";
+    titulo.textContent = MONTH_NAMES[mes] + " " + ano;
+    var nextBtn = document.createElement("button");
+    nextBtn.className = "icon-btn tarefas-cal-nav";
+    nextBtn.textContent = "›";
+    nextBtn.addEventListener("click", function () {
+      var d = new Date(ano, mes + 1, 1);
+      state.tarefasCalendarMes = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01";
+      renderTarefasCalendar();
+    });
+    header.appendChild(prevBtn);
+    header.appendChild(titulo);
+    header.appendChild(nextBtn);
+    tarefasCalendarEl.appendChild(header);
+
+    var hojeBtn = document.createElement("button");
+    hojeBtn.className = "btn ghost small tarefas-cal-today";
+    hojeBtn.textContent = "Hoje";
+    hojeBtn.addEventListener("click", function () {
+      state.tarefasAncora = todayISO();
+      state.tarefasCalendarMes = null;
+      renderWeek();
+      renderTarefasCalendar();
+    });
+    tarefasCalendarEl.appendChild(hojeBtn);
+
+    var grid = document.createElement("div");
+    grid.className = "tarefas-cal-grid";
+    ["D", "S", "T", "Q", "Q", "S", "S"].forEach(function (l) {
+      var wd = document.createElement("div");
+      wd.className = "tarefas-cal-wd";
+      wd.textContent = l;
+      grid.appendChild(wd);
+    });
+
+    var primeiroDia = new Date(ano, mes, 1);
+    var offset = primeiroDia.getDay();
+    var diasNoMes = new Date(ano, mes + 1, 0).getDate();
+
+    for (var i = 0; i < offset; i++) grid.appendChild(document.createElement("div"));
+
+    for (var dia = 1; dia <= diasNoMes; dia++) {
+      var iso = ano + "-" + String(mes + 1).padStart(2, "0") + "-" + String(dia).padStart(2, "0");
+      var cel = document.createElement("button");
+      cel.className = "tarefas-cal-day";
+      cel.textContent = String(dia);
+      if (iso === todayISO()) cel.classList.add("is-hoje");
+      if (semanaAtualIsos.indexOf(iso) !== -1) cel.classList.add("is-semana");
+      if (iso === state.tarefasAncora) cel.classList.add("is-selecionado");
+      cel.addEventListener("click", function () {
+        state.tarefasAncora = this.dataset.iso;
+        renderWeek();
+        renderTarefasCalendar();
+      });
+      cel.dataset.iso = iso;
+      grid.appendChild(cel);
+    }
+
+    tarefasCalendarEl.appendChild(grid);
+  }
 
   function renderWeek() {
     var dates = weekDates();
@@ -1825,6 +1912,7 @@
   function renderAll() {
     renderVendors();
     renderWeek();
+    renderTarefasCalendar();
     if (showingHistory) renderHistory();
     renderCobrancas();
     if (state.cbModalClienteId) renderCbModal();
