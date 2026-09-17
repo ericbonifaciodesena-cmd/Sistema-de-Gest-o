@@ -894,6 +894,21 @@
       var row = document.createElement("div");
       row.className = "task" + (t.concluida ? " done" : "");
 
+      if (t.concluida) {
+        var archBtn = document.createElement("button");
+        archBtn.className = "archive-btn";
+        archBtn.textContent = "arquivar";
+        archBtn.addEventListener("click", async function () {
+          var res = await supabase.from("tarefas").update({ arquivada: true, arquivada_em: new Date().toISOString() }).eq("id", t.id);
+          if (res.error) reportError(res.error); else loadAll();
+        });
+        row.appendChild(archBtn);
+      }
+
+      var mainRow = document.createElement("div");
+      mainRow.className = "task-main";
+      row.appendChild(mainRow);
+
       var cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = !!t.concluida;
@@ -901,7 +916,7 @@
         var res = await supabase.from("tarefas").update({ concluida: cb.checked }).eq("id", t.id);
         if (res.error) reportError(res.error); else loadAll();
       });
-      row.appendChild(cb);
+      mainRow.appendChild(cb);
 
       var mid = document.createElement("div");
       mid.className = "desc";
@@ -929,7 +944,7 @@
           if (ev.key === "Escape") { state.tarefaEditandoId = null; renderWeek(); }
         });
         mid.appendChild(editInput);
-        row.appendChild(mid);
+        mainRow.appendChild(mid);
         setTimeout(function () { editInput.focus(); editInput.select(); ajustarAlturaEdit(); }, 0);
       } else {
         var descText = document.createElement("span");
@@ -939,7 +954,7 @@
         resp.className = "resp";
         resp.textContent = t.perfis ? t.perfis.nome : "";
         mid.appendChild(resp);
-        row.appendChild(mid);
+        mainRow.appendChild(mid);
 
         var editBtn = document.createElement("button");
         editBtn.className = "icon-btn task-edit-btn";
@@ -949,18 +964,7 @@
           state.tarefaEditandoId = t.id;
           renderWeek();
         });
-        row.appendChild(editBtn);
-      }
-
-      if (t.concluida) {
-        var archBtn = document.createElement("button");
-        archBtn.className = "archive-btn";
-        archBtn.textContent = "arquivar";
-        archBtn.addEventListener("click", async function () {
-          var res = await supabase.from("tarefas").update({ arquivada: true, arquivada_em: new Date().toISOString() }).eq("id", t.id);
-          if (res.error) reportError(res.error); else loadAll();
-        });
-        row.appendChild(archBtn);
+        mainRow.appendChild(editBtn);
       }
 
       body.appendChild(row);
