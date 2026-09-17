@@ -232,6 +232,7 @@
     panelCrm.classList.toggle("active", which === "crm");
     panelConversor.classList.toggle("active", which === "conversor");
     safeStorageSet("abaAtiva", which);
+    if (which === "tarefas") setTimeout(posicionarTarefasCalendar, 0);
   }
   tabComissoes.addEventListener("click", function () { selectTab("comissoes"); });
   tabTarefas.addEventListener("click", function () { selectTab("tarefas"); });
@@ -846,7 +847,19 @@
     }
 
     tarefasCalendarEl.appendChild(grid);
+    posicionarTarefasCalendar();
   }
+
+  function posicionarTarefasCalendar() {
+    if (!tarefasCalendarEl || !panelTarefas.classList.contains("active")) return;
+    var rect = panelTarefas.getBoundingClientRect();
+    var gap = 14;
+    var left = rect.left + window.scrollX - tarefasCalendarEl.offsetWidth - gap;
+    if (left < 8) left = 8;
+    tarefasCalendarEl.style.left = left + "px";
+    tarefasCalendarEl.style.top = (rect.top + window.scrollY) + "px";
+  }
+  window.addEventListener("resize", posicionarTarefasCalendar);
 
   function renderWeek() {
     var dates = weekDates();
