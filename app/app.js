@@ -1522,7 +1522,7 @@
     row.appendChild(mainRow);
 
     var statusBtn = document.createElement("button");
-    statusBtn.className = "status-chip " + (s.finalizado ? "pago" : "pendente");
+    statusBtn.className = "btn small";
     statusBtn.textContent = s.finalizado ? "Finalizado" : "Finalizar";
     statusBtn.addEventListener("click", async function () {
       var res = await supabase.from("sinistros").update({ finalizado: !s.finalizado }).eq("id", s.id);
