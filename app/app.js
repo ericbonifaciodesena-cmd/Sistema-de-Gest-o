@@ -1521,14 +1521,14 @@
     mainRow.className = "task-main";
     row.appendChild(mainRow);
 
-    var cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = !!s.finalizado;
-    cb.addEventListener("change", async function () {
-      var res = await supabase.from("sinistros").update({ finalizado: cb.checked }).eq("id", s.id);
+    var statusBtn = document.createElement("button");
+    statusBtn.className = "status-chip " + (s.finalizado ? "pago" : "pendente");
+    statusBtn.textContent = s.finalizado ? "Finalizado" : "Em aberto";
+    statusBtn.addEventListener("click", async function () {
+      var res = await supabase.from("sinistros").update({ finalizado: !s.finalizado }).eq("id", s.id);
       if (res.error) reportError(res.error); else loadAll();
     });
-    mainRow.appendChild(cb);
+    mainRow.appendChild(statusBtn);
 
     var mid = document.createElement("div");
     mid.className = "desc";

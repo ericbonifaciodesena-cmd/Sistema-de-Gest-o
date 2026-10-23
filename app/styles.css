@@ -164,6 +164,7 @@ table.commissions td.val { text-align: right; }
 .day-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .task { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .task-main { display: flex; align-items: flex-start; gap: 8px; }
+.task-main .status-chip { flex-shrink: 0; margin-top: 1px; }
 .task input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); }
 .task .desc { flex: 1; line-height: 1.35; }
 .task.done .desc { text-decoration: line-through; color: var(--muted); }
