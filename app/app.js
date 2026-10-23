@@ -1528,7 +1528,6 @@
       var res = await supabase.from("sinistros").update({ finalizado: !s.finalizado }).eq("id", s.id);
       if (res.error) reportError(res.error); else loadAll();
     });
-    mainRow.appendChild(statusBtn);
 
     var mid = document.createElement("div");
     mid.className = "desc";
@@ -1546,6 +1545,7 @@
     meta.textContent = metaPartes.join(" · ");
     mid.appendChild(meta);
     mainRow.appendChild(mid);
+    mainRow.appendChild(statusBtn);
 
     return row;
   }
