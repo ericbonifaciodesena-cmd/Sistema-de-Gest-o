@@ -207,6 +207,27 @@ uma página apaga as subpáginas dela junto (cascade).
 Só `admin` acessa (mesma regra de Comissões/Tarefas/CRM) — a Thais
 (papel `cobranca`) não vê essa aba.
 
+### Sinistro
+Controle de sinistros e reparos abertos com as seguradoras (vidros,
+pequenos reparos, proteção de rodas e pneus, etc.). `finalizado` marca
+que o caso foi resolvido; a partir daí dá pra arquivar (`arquivado`),
+que tira da fila ativa mas mantém o registro para consulta histórica.
+
+| Campo         | Tipo      | Observação |
+|---------------|-----------|------------|
+| id            | uuid      | chave primária |
+| nome          | text      | nome do cliente |
+| numero        | text      | número do sinistro |
+| tipo          | text      | Sinistro / Vidros, faróis, lanternas e retrovisores / Pequenos reparos / Proteção de rodas e pneus |
+| seguradora    | text      | mesma lista de seguradoras de Cobrança |
+| observacoes   | text      | anotações livres |
+| finalizado    | boolean   | |
+| arquivado     | boolean   | |
+| arquivado_em  | timestamp | |
+| criado_em     | timestamp | |
+
+Mesma regra de acesso de Cobrança: qualquer usuário autenticado.
+
 ## Relacionamentos
 
 ```
@@ -224,8 +245,8 @@ nesta fase — são cadastros de pessoas/registros com papéis totalmente
 diferentes. Acesso é protegido por Row Level Security:
 - **Comissões, Tarefas, Vendedores, CRM (negócios/cotações/atividades) e
   Processos**: só usuários com papel `admin` (Eric e Pedro)
-- **Cobrança**: qualquer usuário autenticado, `admin` ou `cobranca`
-  (inclui a Thais)
+- **Cobrança e Sinistros**: qualquer usuário autenticado, `admin` ou
+  `cobranca` (inclui a Thais)
 
 ## Fora do escopo desta fase
 

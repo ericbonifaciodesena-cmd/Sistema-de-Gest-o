@@ -187,6 +187,11 @@ table.commissions td.val { text-align: right; }
 .history-toggle { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 #historico { display: none; }
 #historico.active { display: block; }
+
+#sin-lista { display: flex; flex-direction: column; gap: 8px; }
+.sin-historico { display: none; }
+.sin-historico.active { display: block; }
+#sin-history-btn { margin-left: 10px; }
 table.history { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 table.history th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 table.history td { padding: 9px 16px; border-bottom: 1px solid var(--border); }

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sistema de Gestão</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 
@@ -50,6 +50,7 @@
       <button class="tab" id="tab-tarefas" role="tab" aria-selected="false">Tarefas</button>
       <button class="tab" id="tab-processos" role="tab" aria-selected="false">Processos</button>
       <button class="tab" id="tab-cobrancas" role="tab" aria-selected="false">Cobranças</button>
+      <button class="tab" id="tab-sinistros" role="tab" aria-selected="false">Sinistros</button>
       <button class="tab" id="tab-crm" role="tab" aria-selected="false">CRM</button>
       <button class="tab" id="tab-conversor" role="tab" aria-selected="false">Conversor PDF</button>
     </div>
@@ -171,6 +172,77 @@
       </div>
 
       <div id="cb-fila"></div>
+    </div>
+
+    <div class="panel" id="panel-sinistros">
+      <div class="cb-search-wrap">
+        <input id="sin-search" class="cb-input" placeholder="Buscar por nome ou número...">
+        <select id="sin-filter-tipo" class="cb-input cb-filter">
+          <option value="">Todos os tipos</option>
+          <option>Sinistro</option>
+          <option>Vidros, faróis, lanternas e retrovisores</option>
+          <option>Pequenos reparos</option>
+          <option>Proteção de rodas e pneus</option>
+        </select>
+        <select id="sin-filter-seguradora" class="cb-input cb-filter">
+          <option value="">Todas as seguradoras</option>
+          <option>Porto</option>
+          <option>Yelum</option>
+          <option>Tokio</option>
+          <option>Allianz</option>
+          <option>HDI</option>
+          <option>Zurich</option>
+          <option>Bradesco</option>
+          <option>Mapfre</option>
+          <option>Suhai</option>
+          <option>Allseg</option>
+        </select>
+      </div>
+
+      <div class="cb-new-wrap">
+        <button class="btn ghost" id="sin-abrir-form">+ novo sinistro</button>
+        <button class="btn ghost small" id="sin-history-btn">Ver arquivados</button>
+        <div class="cb-new-form" id="sin-new-form" hidden>
+          <input id="sin-nome" class="cb-input" placeholder="Nome do cliente">
+          <label class="cb-label">Número de sinistro</label>
+          <input id="sin-numero" class="cb-input" placeholder="opcional">
+          <label class="cb-label">Tipo</label>
+          <select id="sin-tipo" class="cb-input">
+            <option value="">não informado</option>
+            <option>Sinistro</option>
+            <option>Vidros, faróis, lanternas e retrovisores</option>
+            <option>Pequenos reparos</option>
+            <option>Proteção de rodas e pneus</option>
+          </select>
+          <label class="cb-label">Seguradora</label>
+          <select id="sin-seguradora" class="cb-input">
+            <option value="">não informado</option>
+            <option>Porto</option>
+            <option>Yelum</option>
+            <option>Tokio</option>
+            <option>Allianz</option>
+            <option>HDI</option>
+            <option>Zurich</option>
+            <option>Bradesco</option>
+            <option>Mapfre</option>
+            <option>Suhai</option>
+            <option>Allseg</option>
+          </select>
+          <div class="cb-new-actions">
+            <button class="btn small" id="sin-salvar">Adicionar sinistro</button>
+            <button class="btn ghost small" id="sin-fechar-form">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="sin-lista"></div>
+
+      <div id="sin-historico" class="sin-historico">
+        <table class="history">
+          <thead><tr><th>Nome</th><th>Número</th><th>Tipo</th><th>Seguradora</th><th>Arquivado em</th></tr></thead>
+          <tbody id="sin-history-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="panel" id="panel-crm">
@@ -315,6 +387,56 @@
     </div>
   </div>
 
+  <div id="sin-modal-overlay" class="cb-modal-overlay" hidden>
+    <div class="cb-modal" id="sin-modal">
+      <div class="cb-modal-head">
+        <div>
+          <h2 id="sin-modal-nome"></h2>
+          <p class="tag" id="sin-modal-tipo"></p>
+        </div>
+        <button class="icon-btn" id="sin-modal-close">✕</button>
+      </div>
+
+      <div class="crm-field-row" style="margin-top:14px;">
+        <div>
+          <label class="cb-label">Número de sinistro</label>
+          <input id="sin-modal-numero" class="cb-input" placeholder="não informado">
+        </div>
+        <div>
+          <label class="cb-label">Seguradora</label>
+          <select id="sin-modal-seguradora" class="cb-input">
+            <option value="">não informado</option>
+            <option>Porto</option>
+            <option>Yelum</option>
+            <option>Tokio</option>
+            <option>Allianz</option>
+            <option>HDI</option>
+            <option>Zurich</option>
+            <option>Bradesco</option>
+            <option>Mapfre</option>
+            <option>Suhai</option>
+            <option>Allseg</option>
+          </select>
+        </div>
+      </div>
+      <label class="cb-label" style="margin-top:10px;">Tipo</label>
+      <select id="sin-modal-tipo-select" class="cb-input">
+        <option value="">não informado</option>
+        <option>Sinistro</option>
+        <option>Vidros, faróis, lanternas e retrovisores</option>
+        <option>Pequenos reparos</option>
+        <option>Proteção de rodas e pneus</option>
+      </select>
+
+      <label class="cb-label" style="margin-top:14px;">Observações</label>
+      <textarea id="sin-modal-obs" class="cb-input" rows="3" placeholder="Anotações sobre este sinistro..."></textarea>
+      <div class="cb-obs-actions">
+        <button class="btn small" id="sin-modal-obs-salvar">Salvar observações</button>
+        <span class="cb-obs-status" id="sin-modal-obs-status"></span>
+      </div>
+    </div>
+  </div>
+
   <div id="comissao-card-overlay" class="cb-modal-overlay" hidden>
     <div class="cb-modal" id="comissao-card-modal">
       <div class="cb-modal-head">
@@ -356,6 +478,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

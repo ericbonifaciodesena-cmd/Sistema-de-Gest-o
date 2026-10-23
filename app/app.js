@@ -24,7 +24,8 @@
     novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
     processos: [], processosExpandidos: {},
-    tarefasAncora: todayISO(), tarefasCalendarMes: null
+    tarefasAncora: todayISO(), tarefasCalendarMes: null,
+    sinistros: [], sinModalId: null, sinSearchTerm: "", sinFilterTipo: "", sinFilterSeguradora: ""
   };
   // Exposto só pra dar pra inspecionar pelo console do navegador durante
   // depuração (window.__debug.state...). Não expõe nada que já não
@@ -209,12 +210,14 @@
   var tabTarefas = document.getElementById("tab-tarefas");
   var tabProcessos = document.getElementById("tab-processos");
   var tabCobrancas = document.getElementById("tab-cobrancas");
+  var tabSinistros = document.getElementById("tab-sinistros");
   var tabCrm = document.getElementById("tab-crm");
   var tabConversor = document.getElementById("tab-conversor");
   var panelComissoes = document.getElementById("panel-comissoes");
   var panelTarefas = document.getElementById("panel-tarefas");
   var panelProcessos = document.getElementById("panel-processos");
   var panelCobrancas = document.getElementById("panel-cobrancas");
+  var panelSinistros = document.getElementById("panel-sinistros");
   var panelCrm = document.getElementById("panel-crm");
   var panelConversor = document.getElementById("panel-conversor");
   function selectTab(which) {
@@ -222,6 +225,7 @@
     tabTarefas.setAttribute("aria-selected", String(which === "tarefas"));
     tabProcessos.setAttribute("aria-selected", String(which === "processos"));
     tabCobrancas.setAttribute("aria-selected", String(which === "cobrancas"));
+    tabSinistros.setAttribute("aria-selected", String(which === "sinistros"));
     tabCrm.setAttribute("aria-selected", String(which === "crm"));
     tabConversor.setAttribute("aria-selected", String(which === "conversor"));
     panelComissoes.classList.toggle("active", which === "comissoes");
@@ -229,6 +233,7 @@
     document.getElementById("tarefas-calendar").classList.toggle("active", which === "tarefas");
     panelProcessos.classList.toggle("active", which === "processos");
     panelCobrancas.classList.toggle("active", which === "cobrancas");
+    panelSinistros.classList.toggle("active", which === "sinistros");
     panelCrm.classList.toggle("active", which === "crm");
     panelConversor.classList.toggle("active", which === "conversor");
     safeStorageSet("abaAtiva", which);
@@ -238,6 +243,7 @@
   tabTarefas.addEventListener("click", function () { selectTab("tarefas"); });
   tabProcessos.addEventListener("click", function () { selectTab("processos"); });
   tabCobrancas.addEventListener("click", function () { selectTab("cobrancas"); });
+  tabSinistros.addEventListener("click", function () { selectTab("sinistros"); });
   tabCrm.addEventListener("click", function () { selectTab("crm"); });
   tabConversor.addEventListener("click", function () { selectTab("conversor"); });
 
@@ -263,7 +269,7 @@
   }
 
   async function loadAllOnce() {
-    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes, prRes] = await Promise.all([
+    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes, prRes, siRes] = await Promise.all([
       fetchAllRows("vendedores", "*"),
       fetchAllRows("comissoes", "*"),
       fetchAllRows("tarefas", "*, perfis(nome)"),
@@ -272,9 +278,10 @@
       fetchAllRows("negocios", "*"),
       fetchAllRows("cotacoes", "*"),
       fetchAllRows("atividades", "*, perfis(nome)"),
-      fetchAllRows("processos", "*")
+      fetchAllRows("processos", "*"),
+      fetchAllRows("sinistros", "*")
     ]);
-    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error || prRes.error;
+    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error || prRes.error || siRes.error;
     if (erro) return erro;
     state.vendedores = vRes.data;
     state.comissoes = cRes.data;
@@ -285,6 +292,7 @@
     state.cotacoes = qRes.data;
     state.atividades = aRes.data;
     state.processos = prRes.data;
+    state.sinistros = siRes.data;
     renderAll();
     return null;
   }
@@ -314,6 +322,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "cotacoes" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "atividades" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "processos" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "sinistros" }, loadAll)
       .subscribe();
   }
   function teardownSubscriptions() {
@@ -1459,6 +1468,248 @@
     });
   }
 
+  // ---- render: sinistros ----
+  var sinLista = document.getElementById("sin-lista");
+  var sinAddToggle = document.getElementById("sin-abrir-form");
+  var sinNewForm = document.getElementById("sin-new-form");
+  var sinModalOverlay = document.getElementById("sin-modal-overlay");
+  var sinHistorico = document.getElementById("sin-historico");
+  var sinHistoryBtn = document.getElementById("sin-history-btn");
+  var sinShowingHistory = false;
+
+  function renderSinistros() {
+    var termo = (state.sinSearchTerm || "").trim().toLowerCase();
+    var ativos = state.sinistros.filter(function (s) { return !s.arquivado; });
+    var filtrados = ativos.filter(function (s) {
+      if (termo && s.nome.toLowerCase().indexOf(termo) === -1 && (s.numero || "").toLowerCase().indexOf(termo) === -1) return false;
+      if (state.sinFilterTipo && s.tipo !== state.sinFilterTipo) return false;
+      if (state.sinFilterSeguradora && s.seguradora !== state.sinFilterSeguradora) return false;
+      return true;
+    });
+    filtrados.sort(function (a, b) { return (b.criado_em || "").localeCompare(a.criado_em || ""); });
+
+    sinLista.innerHTML = "";
+    if (!filtrados.length) {
+      var empty = document.createElement("div");
+      empty.className = "cb-empty";
+      var temFiltro = termo || state.sinFilterTipo || state.sinFilterSeguradora;
+      empty.textContent = temFiltro ? "Nenhum sinistro encontrado para os filtros aplicados." : "Nenhum sinistro em aberto.";
+      sinLista.appendChild(empty);
+    } else {
+      filtrados.forEach(function (s) { sinLista.appendChild(renderSinRow(s)); });
+    }
+
+    renderSinHistorico();
+  }
+
+  function renderSinRow(s) {
+    var row = document.createElement("div");
+    row.className = "task" + (s.finalizado ? " done" : "");
+
+    if (s.finalizado) {
+      var archBtn = document.createElement("button");
+      archBtn.className = "archive-btn";
+      archBtn.textContent = "arquivar";
+      archBtn.addEventListener("click", async function () {
+        var res = await supabase.from("sinistros").update({ arquivado: true, arquivado_em: new Date().toISOString() }).eq("id", s.id);
+        if (res.error) reportError(res.error); else loadAll();
+      });
+      row.appendChild(archBtn);
+    }
+
+    var mainRow = document.createElement("div");
+    mainRow.className = "task-main";
+    row.appendChild(mainRow);
+
+    var cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!s.finalizado;
+    cb.addEventListener("change", async function () {
+      var res = await supabase.from("sinistros").update({ finalizado: cb.checked }).eq("id", s.id);
+      if (res.error) reportError(res.error); else loadAll();
+    });
+    mainRow.appendChild(cb);
+
+    var mid = document.createElement("div");
+    mid.className = "desc";
+    var nameBtn = document.createElement("button");
+    nameBtn.className = "cb-name-btn";
+    nameBtn.textContent = s.nome;
+    nameBtn.addEventListener("click", function () { openSinModal(s.id); });
+    mid.appendChild(nameBtn);
+    var meta = document.createElement("span");
+    meta.className = "resp";
+    var metaPartes = [];
+    if (s.numero) metaPartes.push("nº " + s.numero);
+    if (s.tipo) metaPartes.push(s.tipo);
+    if (s.seguradora) metaPartes.push(s.seguradora);
+    meta.textContent = metaPartes.join(" · ");
+    mid.appendChild(meta);
+    mainRow.appendChild(mid);
+
+    return row;
+  }
+
+  function renderSinHistorico() {
+    var body = document.getElementById("sin-history-body");
+    body.innerHTML = "";
+    var arquivados = state.sinistros
+      .filter(function (s) { return s.arquivado; })
+      .sort(function (a, b) { return (b.arquivado_em || "").localeCompare(a.arquivado_em || ""); });
+    if (!arquivados.length) {
+      var tr = document.createElement("tr");
+      tr.className = "empty-row";
+      tr.innerHTML = "<td colspan=\"5\">Nenhum sinistro arquivado ainda.</td>";
+      body.appendChild(tr);
+      return;
+    }
+    arquivados.forEach(function (s) {
+      var tr = document.createElement("tr");
+      var tds = [s.nome, s.numero || "—", s.tipo || "—", s.seguradora || "—", s.arquivado_em ? fmtDate(s.arquivado_em.slice(0, 10)) : "—"];
+      tds.forEach(function (txt) {
+        var td = document.createElement("td");
+        td.textContent = txt;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  sinHistoryBtn.addEventListener("click", function () {
+    sinShowingHistory = !sinShowingHistory;
+    sinHistorico.classList.toggle("active", sinShowingHistory);
+    sinLista.style.display = sinShowingHistory ? "none" : "";
+    sinHistoryBtn.textContent = sinShowingHistory ? "Ver fila ativa" : "Ver arquivados";
+  });
+
+  document.getElementById("sin-search").addEventListener("input", function (ev) {
+    state.sinSearchTerm = ev.target.value;
+    renderSinistros();
+  });
+  document.getElementById("sin-filter-tipo").addEventListener("change", function (ev) {
+    state.sinFilterTipo = ev.target.value;
+    renderSinistros();
+  });
+  document.getElementById("sin-filter-seguradora").addEventListener("change", function (ev) {
+    state.sinFilterSeguradora = ev.target.value;
+    renderSinistros();
+  });
+
+  sinAddToggle.addEventListener("click", function () { sinNewForm.hidden = !sinNewForm.hidden; });
+  document.getElementById("sin-fechar-form").addEventListener("click", function () { sinNewForm.hidden = true; });
+
+  var sinSalvando = false;
+  async function salvarNovoSinistro() {
+    if (sinSalvando) return;
+    sinSalvando = true;
+    try {
+      await salvarNovoSinistroImpl();
+    } finally {
+      sinSalvando = false;
+    }
+  }
+  sinNewForm.addEventListener("click", function (ev) {
+    if (ev.target.closest("#sin-salvar")) salvarNovoSinistro();
+  });
+  async function salvarNovoSinistroImpl() {
+    var nome = document.getElementById("sin-nome").value.trim();
+    if (!nome) {
+      alert("Preencha antes de adicionar: Nome do cliente.");
+      return;
+    }
+    var numero = document.getElementById("sin-numero").value.trim();
+    var tipo = document.getElementById("sin-tipo").value;
+    var seguradora = document.getElementById("sin-seguradora").value;
+    var res = await comLimiteDeTempo(supabase.from("sinistros").insert({
+      nome: nome,
+      numero: numero || "",
+      tipo: tipo || null,
+      seguradora: seguradora || null
+    }), 10);
+    if (res.error) return reportError(res.error);
+
+    document.getElementById("sin-nome").value = "";
+    document.getElementById("sin-numero").value = "";
+    document.getElementById("sin-tipo").value = "";
+    document.getElementById("sin-seguradora").value = "";
+    sinNewForm.hidden = true;
+    state.sinSearchTerm = "";
+    state.sinFilterTipo = "";
+    state.sinFilterSeguradora = "";
+    document.getElementById("sin-search").value = "";
+    document.getElementById("sin-filter-tipo").value = "";
+    document.getElementById("sin-filter-seguradora").value = "";
+
+    var atualizou = await loadAll();
+    if (!atualizou) {
+      alert('O sinistro de "' + nome + '" foi salvo, mas a tela não conseguiu atualizar a lista agora. Atualize a página (F5).');
+    }
+  }
+
+  function openSinModal(id) {
+    state.sinModalId = id;
+    renderSinModal();
+    sinModalOverlay.hidden = false;
+  }
+  function closeSinModal() {
+    sinModalOverlay.hidden = true;
+    state.sinModalId = null;
+  }
+  document.getElementById("sin-modal-close").addEventListener("click", closeSinModal);
+  sinModalOverlay.addEventListener("click", function (ev) { if (ev.target === sinModalOverlay) closeSinModal(); });
+
+  function sinBindField(elId, campo, eventName) {
+    var el = document.getElementById(elId);
+    el.addEventListener(eventName, async function () {
+      if (!state.sinModalId) return;
+      var v = el.value.trim ? el.value.trim() : el.value;
+      var res = await supabase.from("sinistros").update(
+        Object.fromEntries([[campo, v || null]])
+      ).eq("id", state.sinModalId);
+      if (res.error) reportError(res.error); else loadAll();
+    });
+    return el;
+  }
+  var sinModalNumero = sinBindField("sin-modal-numero", "numero", "blur");
+  var sinModalSeguradora = sinBindField("sin-modal-seguradora", "seguradora", "change");
+  var sinModalTipoSelect = sinBindField("sin-modal-tipo-select", "tipo", "change");
+
+  var sinModalObs = document.getElementById("sin-modal-obs");
+  var sinModalObsStatus = document.getElementById("sin-modal-obs-status");
+  var sinSalvandoObs = false;
+  async function salvarSinObservacoes() {
+    if (!state.sinModalId || sinSalvandoObs) return;
+    sinSalvandoObs = true;
+    var id = state.sinModalId;
+    var texto = sinModalObs.value;
+    sinModalObsStatus.textContent = "Salvando...";
+    var res = await comLimiteDeTempo(
+      supabase.from("sinistros").update({ observacoes: texto }).eq("id", id), 10
+    );
+    sinSalvandoObs = false;
+    if (res.error) {
+      sinModalObsStatus.textContent = "";
+      reportError(res.error);
+      return;
+    }
+    await loadAll();
+    sinModalObsStatus.textContent = "Salvo.";
+    setTimeout(function () { if (sinModalObsStatus.textContent === "Salvo.") sinModalObsStatus.textContent = ""; }, 2500);
+  }
+  sinModalObs.addEventListener("blur", salvarSinObservacoes);
+  document.getElementById("sin-modal-obs-salvar").addEventListener("click", salvarSinObservacoes);
+
+  function renderSinModal() {
+    var s = state.sinistros.find(function (x) { return x.id === state.sinModalId; });
+    if (!s) return;
+    document.getElementById("sin-modal-nome").textContent = s.nome;
+    document.getElementById("sin-modal-tipo").textContent = s.tipo || "";
+    if (document.activeElement !== sinModalNumero) sinModalNumero.value = s.numero || "";
+    sinModalSeguradora.value = s.seguradora || "";
+    sinModalTipoSelect.value = s.tipo || "";
+    if (document.activeElement !== sinModalObs) sinModalObs.value = s.observacoes || "";
+  }
+
   // ---- render: crm ----
   var crmBoard = document.getElementById("crm-board");
   var crmPipeNovo = document.getElementById("crm-pipe-novo");
@@ -1934,6 +2185,8 @@
     if (showingHistory) renderHistory();
     renderCobrancas();
     if (state.cbModalClienteId) renderCbModal();
+    renderSinistros();
+    if (state.sinModalId) renderSinModal();
     renderCrm();
     if (state.crmModalNegocioId) renderCrmModal();
     if (state.comissaoCardId) renderComissaoCard();

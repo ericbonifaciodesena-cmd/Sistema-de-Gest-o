@@ -220,3 +220,25 @@ alter table processos enable row level security;
 
 create policy "admin acessa processos" on processos
     for all using (current_papel() = 'admin') with check (current_papel() = 'admin');
+
+-- Sinistros: controle de sinistros/reparos abertos com as seguradoras.
+-- Mesmo nível de acesso de cobrança (qualquer usuário logado). `finalizado`
+-- marca que o caso foi resolvido; `arquivado` tira da fila ativa mas
+-- mantém o registro histórico (consulta via "Ver arquivados").
+create table sinistros (
+    id            uuid primary key default gen_random_uuid(),
+    nome          text not null,
+    numero        text not null default '',
+    tipo          text check (tipo in ('Sinistro', 'Vidros, faróis, lanternas e retrovisores', 'Pequenos reparos', 'Proteção de rodas e pneus')),
+    seguradora    text check (seguradora in ('Porto', 'Yelum', 'Tokio', 'Allianz', 'HDI', 'Zurich', 'Bradesco', 'Mapfre', 'Suhai', 'Allseg')),
+    observacoes   text not null default '',
+    finalizado    boolean not null default false,
+    arquivado     boolean not null default false,
+    arquivado_em  timestamptz,
+    criado_em     timestamptz not null default now()
+);
+
+alter table sinistros enable row level security;
+
+create policy "equipe interna acessa sinistros" on sinistros
+    for all using (auth.uid() is not null) with check (auth.uid() is not null);
