@@ -19,7 +19,7 @@
     renovacao: ["Pedido de renovação", "Renovação Realizada", "Proposta Apresentada", "Follow Up", "Negócio Fechado"]
   };
   var state = {
-    session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null,
+    session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null, vendorInfoId: null,
     cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
     novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
@@ -367,11 +367,38 @@
   }
 
   function renderVendorTile(vendor) {
-    var tile = document.createElement("button");
+    var tile = document.createElement("div");
     tile.className = "vendor-tile";
-    tile.addEventListener("click", function () { state.vendorAberto = vendor.id; renderVendors(); });
+    tile.tabIndex = 0;
+    tile.addEventListener("click", function (ev) {
+      if (ev.target.closest(".vendor-info-btn")) return;
+      state.vendorAberto = vendor.id;
+      renderVendors();
+    });
+    tile.addEventListener("keydown", function (ev) {
+      if (ev.target.closest(".vendor-info-btn")) return;
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); state.vendorAberto = vendor.id; renderVendors(); }
+    });
 
     var count = state.comissoes.filter(function (c) { return c.vendedor_id === vendor.id; }).length;
+    var pendentes = state.comissoes.filter(function (c) { return c.vendedor_id === vendor.id && c.situacao === "pendente"; }).length;
+
+    var infoBtn = document.createElement("button");
+    infoBtn.className = "icon-btn vendor-info-btn";
+    infoBtn.textContent = "ℹ";
+    infoBtn.title = "Ver comissões pendentes";
+    infoBtn.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      openVendorInfo(vendor.id);
+    });
+    tile.appendChild(infoBtn);
+
+    if (pendentes) {
+      var badge = document.createElement("span");
+      badge.className = "vendor-info-badge";
+      badge.textContent = pendentes;
+      tile.appendChild(badge);
+    }
 
     var name = document.createElement("span");
     name.className = "vendor-tile-name";
@@ -389,6 +416,63 @@
     tile.appendChild(meta);
     tile.appendChild(total);
     return tile;
+  }
+
+  var vendorInfoOverlay = document.getElementById("vendor-info-overlay");
+  function openVendorInfo(vendorId) {
+    state.vendorInfoId = vendorId;
+    renderVendorInfo();
+    vendorInfoOverlay.hidden = false;
+  }
+  function closeVendorInfo() {
+    vendorInfoOverlay.hidden = true;
+    state.vendorInfoId = null;
+  }
+  document.getElementById("vendor-info-close").addEventListener("click", closeVendorInfo);
+  vendorInfoOverlay.addEventListener("click", function (ev) { if (ev.target === vendorInfoOverlay) closeVendorInfo(); });
+
+  function renderVendorInfo() {
+    var vendor = state.vendedores.find(function (v) { return v.id === state.vendorInfoId; });
+    if (!vendor) return;
+    document.getElementById("vendor-info-nome").textContent = vendor.nome;
+
+    var pendentes = state.comissoes
+      .filter(function (c) { return c.vendedor_id === vendor.id && c.situacao === "pendente"; })
+      .sort(function (a, b) { return (a.data || "").localeCompare(b.data || ""); });
+
+    var lista = document.getElementById("vendor-info-lista");
+    lista.innerHTML = "";
+    if (!pendentes.length) {
+      var empty = document.createElement("div");
+      empty.className = "cb-empty";
+      empty.textContent = "Nenhuma comissão pendente.";
+      lista.appendChild(empty);
+    } else {
+      pendentes.forEach(function (c) {
+        var row = document.createElement("div");
+        row.className = "cb-row";
+        var nameWrap = document.createElement("div");
+        nameWrap.className = "cb-row-name";
+        var nome = document.createElement("span");
+        nome.className = "cb-name-btn";
+        nome.style.cursor = "default";
+        nome.textContent = c.cliente_nome;
+        var meta = document.createElement("div");
+        meta.className = "cb-row-meta";
+        meta.textContent = fmtDate(c.data) + (c.colaborador ? " · " + c.colaborador : "");
+        nameWrap.appendChild(nome);
+        nameWrap.appendChild(meta);
+        row.appendChild(nameWrap);
+        var val = document.createElement("div");
+        val.className = "cb-row-value tabular";
+        val.textContent = fmtMoney(Number(c.valor));
+        row.appendChild(val);
+        lista.appendChild(row);
+      });
+    }
+
+    var totalPendente = pendentes.reduce(function (s, c) { return s + Number(c.valor); }, 0);
+    document.getElementById("vendor-info-total").textContent = fmtMoney(totalPendente);
   }
 
   function renderVendorCard(vendor) {
@@ -2180,6 +2264,7 @@
 
   function renderAll() {
     renderVendors();
+    if (state.vendorInfoId) renderVendorInfo();
     renderWeek();
     renderTarefasCalendar();
     if (showingHistory) renderHistory();

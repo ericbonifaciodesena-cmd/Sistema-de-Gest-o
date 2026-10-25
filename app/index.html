@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sistema de Gestão</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 
@@ -437,6 +437,23 @@
     </div>
   </div>
 
+  <div id="vendor-info-overlay" class="cb-modal-overlay" hidden>
+    <div class="cb-modal" id="vendor-info-modal">
+      <div class="cb-modal-head">
+        <div>
+          <h2 id="vendor-info-nome"></h2>
+          <p class="tag">Comissões pendentes de pagamento</p>
+        </div>
+        <button class="icon-btn" id="vendor-info-close">✕</button>
+      </div>
+      <div id="vendor-info-lista"></div>
+      <div class="vendor-foot">
+        <span>Total pendente</span>
+        <span class="total tabular" id="vendor-info-total">R$ 0,00</span>
+      </div>
+    </div>
+  </div>
+
   <div id="comissao-card-overlay" class="cb-modal-overlay" hidden>
     <div class="cb-modal" id="comissao-card-modal">
       <div class="cb-modal-head">
@@ -478,6 +495,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
