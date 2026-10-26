@@ -339,7 +339,30 @@
       .reduce(function (sum, c) { return sum + Number(c.valor); }, 0);
   }
 
+  function renderComissoesStats() {
+    var hoje = new Date();
+    var anoAtual = hoje.getFullYear();
+    var mesAtual = hoje.getMonth();
+    var totalMes = 0, totalAno = 0, totalGeral = 0;
+    state.comissoes
+      .filter(function (c) { return c.situacao === "pago"; })
+      .forEach(function (c) {
+        var v = Number(c.valor);
+        totalGeral += v;
+        if (!c.data) return;
+        var d = new Date(c.data + "T00:00:00");
+        if (d.getFullYear() === anoAtual) {
+          totalAno += v;
+          if (d.getMonth() === mesAtual) totalMes += v;
+        }
+      });
+    document.getElementById("com-stat-mes").textContent = fmtMoney(totalMes);
+    document.getElementById("com-stat-ano").textContent = fmtMoney(totalAno);
+    document.getElementById("com-stat-total").textContent = fmtMoney(totalGeral);
+  }
+
   function renderVendors() {
+    renderComissoesStats();
     vendorGrid.innerHTML = "";
 
     if (state.vendorAberto) {
