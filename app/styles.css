@@ -201,6 +201,20 @@ table.commissions td.val { text-align: right; }
 .sin-historico { display: none; }
 .sin-historico.active { display: block; }
 #sin-history-btn { margin-left: 10px; }
+
+.sin-card { border-top: 3px solid var(--border); }
+.sin-card.sin-tipo-sinistro { border-top-color: var(--bad); }
+.sin-card.sin-tipo-vidros { border-top-color: var(--accent); }
+.sin-card.sin-tipo-reparos { border-top-color: var(--warn); }
+.sin-card.sin-tipo-rodas { border-top-color: var(--good); }
+
+.sin-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.sin-meta .resp { margin-top: 0; }
+.sin-tipo-chip { padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
+.sin-tipo-chip.sin-tipo-sinistro { background: var(--bad-weak); color: var(--bad); }
+.sin-tipo-chip.sin-tipo-vidros { background: var(--accent-weak); color: var(--accent); }
+.sin-tipo-chip.sin-tipo-reparos { background: var(--warn-weak); color: var(--warn); }
+.sin-tipo-chip.sin-tipo-rodas { background: var(--good-weak); color: var(--good); }
 table.history { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 table.history th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 table.history td { padding: 9px 16px; border-bottom: 1px solid var(--border); }

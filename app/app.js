@@ -1586,9 +1586,18 @@
     renderSinHistorico();
   }
 
+  function sinTipoSlug(tipo) {
+    if (tipo === "Sinistro") return "sinistro";
+    if (tipo === "Vidros, faróis, lanternas e retrovisores") return "vidros";
+    if (tipo === "Pequenos reparos") return "reparos";
+    if (tipo === "Proteção de rodas e pneus") return "rodas";
+    return "";
+  }
+
   function renderSinRow(s) {
     var row = document.createElement("div");
-    row.className = "task" + (s.finalizado ? " done" : "");
+    var tipoSlug = sinTipoSlug(s.tipo);
+    row.className = "task sin-card" + (s.finalizado ? " done" : "") + (tipoSlug ? " sin-tipo-" + tipoSlug : "");
 
     if (s.finalizado) {
       var archBtn = document.createElement("button");
@@ -1620,14 +1629,25 @@
     nameBtn.textContent = s.nome;
     nameBtn.addEventListener("click", function () { openSinModal(s.id); });
     mid.appendChild(nameBtn);
-    var meta = document.createElement("span");
-    meta.className = "resp";
-    var metaPartes = [];
-    if (s.numero) metaPartes.push("nº " + s.numero);
-    if (s.tipo) metaPartes.push(s.tipo);
-    if (s.seguradora) metaPartes.push(s.seguradora);
-    meta.textContent = metaPartes.join(" · ");
-    mid.appendChild(meta);
+
+    var metaRow = document.createElement("div");
+    metaRow.className = "sin-meta";
+    if (s.tipo) {
+      var tipoChip = document.createElement("span");
+      tipoChip.className = "sin-tipo-chip" + (tipoSlug ? " sin-tipo-" + tipoSlug : "");
+      tipoChip.textContent = s.tipo;
+      metaRow.appendChild(tipoChip);
+    }
+    var restoPartes = [];
+    if (s.numero) restoPartes.push("nº " + s.numero);
+    if (s.seguradora) restoPartes.push(s.seguradora);
+    if (restoPartes.length) {
+      var resto = document.createElement("span");
+      resto.className = "resp";
+      resto.textContent = restoPartes.join(" · ");
+      metaRow.appendChild(resto);
+    }
+    mid.appendChild(metaRow);
     mainRow.appendChild(mid);
     mainRow.appendChild(statusBtn);
 
