@@ -202,7 +202,7 @@ table.commissions td.val { text-align: right; }
 .sin-historico.active { display: block; }
 #sin-history-btn { margin-left: 10px; }
 
-.sin-card { border-top: 3px solid var(--border); }
+.sin-card { border: 1px solid var(--border); border-top: 3px solid var(--border); box-shadow: var(--shadow); }
 .sin-card.sin-tipo-sinistro { border-top-color: var(--bad); }
 .sin-card.sin-tipo-vidros { border-top-color: var(--accent); }
 .sin-card.sin-tipo-reparos { border-top-color: var(--warn); }
