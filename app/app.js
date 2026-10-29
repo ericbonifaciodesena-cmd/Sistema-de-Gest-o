@@ -25,7 +25,7 @@
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
     processos: [], processosExpandidos: {},
     tarefasAncora: todayISO(), tarefasCalendarMes: null,
-    sinistros: [], sinModalId: null, sinSearchTerm: "", sinFilterTipo: "", sinFilterSeguradora: ""
+    sinistros: [], sinistroAtualizacoes: [], sinModalId: null, sinSearchTerm: "", sinFilterTipo: "", sinFilterSeguradora: ""
   };
   // Exposto só pra dar pra inspecionar pelo console do navegador durante
   // depuração (window.__debug.state...). Não expõe nada que já não
@@ -50,6 +50,10 @@
   function fmtDate(iso) {
     var d = new Date(iso + "T00:00:00");
     return d.toLocaleDateString("pt-BR");
+  }
+  function fmtDateHora(isoTimestamp) {
+    var d = new Date(isoTimestamp);
+    return d.toLocaleDateString("pt-BR") + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   }
   function todayISO(offsetDays) {
     var d = new Date();
@@ -269,7 +273,7 @@
   }
 
   async function loadAllOnce() {
-    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes, prRes, siRes] = await Promise.all([
+    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes, prRes, siRes, saRes] = await Promise.all([
       fetchAllRows("vendedores", "*"),
       fetchAllRows("comissoes", "*"),
       fetchAllRows("tarefas", "*, perfis(nome)"),
@@ -279,9 +283,10 @@
       fetchAllRows("cotacoes", "*"),
       fetchAllRows("atividades", "*, perfis(nome)"),
       fetchAllRows("processos", "*"),
-      fetchAllRows("sinistros", "*")
+      fetchAllRows("sinistros", "*"),
+      fetchAllRows("sinistro_atualizacoes", "*, perfis(nome)")
     ]);
-    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error || prRes.error || siRes.error;
+    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error || prRes.error || siRes.error || saRes.error;
     if (erro) return erro;
     state.vendedores = vRes.data;
     state.comissoes = cRes.data;
@@ -293,6 +298,7 @@
     state.atividades = aRes.data;
     state.processos = prRes.data;
     state.sinistros = siRes.data;
+    state.sinistroAtualizacoes = saRes.data;
     renderAll();
     return null;
   }
@@ -323,6 +329,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "atividades" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "processos" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "sinistros" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "sinistro_atualizacoes" }, loadAll)
       .subscribe();
   }
   function teardownSubscriptions() {
@@ -1671,6 +1678,15 @@
       metaRow.appendChild(resto);
     }
     mid.appendChild(metaRow);
+
+    var ultimas = sinAtualizacoes(s.id);
+    if (ultimas.length) {
+      var statusLine = document.createElement("div");
+      statusLine.className = "sin-ultima-atualizacao";
+      statusLine.textContent = fmtDateHora(ultimas[0].criado_em) + " — " + ultimas[0].texto;
+      mid.appendChild(statusLine);
+    }
+
     mainRow.appendChild(mid);
     mainRow.appendChild(statusBtn);
 
@@ -1801,30 +1817,41 @@
   var sinModalSeguradora = sinBindField("sin-modal-seguradora", "seguradora", "change");
   var sinModalTipoSelect = sinBindField("sin-modal-tipo-select", "tipo", "change");
 
-  var sinModalObs = document.getElementById("sin-modal-obs");
-  var sinModalObsStatus = document.getElementById("sin-modal-obs-status");
-  var sinSalvandoObs = false;
-  async function salvarSinObservacoes() {
-    if (!state.sinModalId || sinSalvandoObs) return;
-    sinSalvandoObs = true;
+  var sinModalStatusTexto = document.getElementById("sin-modal-status-texto");
+  var sinModalStatusFeedback = document.getElementById("sin-modal-status-feedback");
+  var sinSalvandoStatus = false;
+  async function adicionarSinAtualizacao() {
+    if (!state.sinModalId || sinSalvandoStatus) return;
+    var texto = sinModalStatusTexto.value.trim();
+    if (!texto) return;
+    sinSalvandoStatus = true;
     var id = state.sinModalId;
-    var texto = sinModalObs.value;
-    sinModalObsStatus.textContent = "Salvando...";
+    sinModalStatusFeedback.textContent = "Salvando...";
     var res = await comLimiteDeTempo(
-      supabase.from("sinistros").update({ observacoes: texto }).eq("id", id), 10
+      supabase.from("sinistro_atualizacoes").insert({
+        sinistro_id: id,
+        autor_id: state.perfil.id,
+        texto: texto
+      }), 10
     );
-    sinSalvandoObs = false;
+    sinSalvandoStatus = false;
     if (res.error) {
-      sinModalObsStatus.textContent = "";
+      sinModalStatusFeedback.textContent = "";
       reportError(res.error);
       return;
     }
+    sinModalStatusTexto.value = "";
     await loadAll();
-    sinModalObsStatus.textContent = "Salvo.";
-    setTimeout(function () { if (sinModalObsStatus.textContent === "Salvo.") sinModalObsStatus.textContent = ""; }, 2500);
+    sinModalStatusFeedback.textContent = "Salvo.";
+    setTimeout(function () { if (sinModalStatusFeedback.textContent === "Salvo.") sinModalStatusFeedback.textContent = ""; }, 2500);
   }
-  sinModalObs.addEventListener("blur", salvarSinObservacoes);
-  document.getElementById("sin-modal-obs-salvar").addEventListener("click", salvarSinObservacoes);
+  document.getElementById("sin-modal-status-salvar").addEventListener("click", adicionarSinAtualizacao);
+
+  function sinAtualizacoes(sinistroId) {
+    return state.sinistroAtualizacoes
+      .filter(function (a) { return a.sinistro_id === sinistroId; })
+      .sort(function (a, b) { return (b.criado_em || "").localeCompare(a.criado_em || ""); });
+  }
 
   function renderSinModal() {
     var s = state.sinistros.find(function (x) { return x.id === state.sinModalId; });
@@ -1834,7 +1861,30 @@
     if (document.activeElement !== sinModalNumero) sinModalNumero.value = s.numero || "";
     sinModalSeguradora.value = s.seguradora || "";
     sinModalTipoSelect.value = s.tipo || "";
-    if (document.activeElement !== sinModalObs) sinModalObs.value = s.observacoes || "";
+
+    var lista = document.getElementById("sin-modal-status-lista");
+    lista.innerHTML = "";
+    var atualizacoes = sinAtualizacoes(s.id);
+    if (!atualizacoes.length) {
+      var empty = document.createElement("div");
+      empty.className = "cb-empty";
+      empty.textContent = "Nenhuma atualização registrada ainda.";
+      lista.appendChild(empty);
+    } else {
+      atualizacoes.forEach(function (a) {
+        var item = document.createElement("div");
+        item.className = "sin-status-item";
+        var meta = document.createElement("div");
+        meta.className = "sin-status-meta";
+        meta.textContent = fmtDateHora(a.criado_em) + (a.perfis ? " · " + a.perfis.nome : "");
+        var texto = document.createElement("div");
+        texto.className = "sin-status-texto";
+        texto.textContent = a.texto;
+        item.appendChild(meta);
+        item.appendChild(texto);
+        lista.appendChild(item);
+      });
+    }
   }
 
   // ---- render: crm ----

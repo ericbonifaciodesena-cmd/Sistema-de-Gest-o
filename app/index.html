@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sistema de Gestão</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="styles.css?v=15">
+  <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 
@@ -442,11 +442,12 @@
         <option>Proteção de rodas e pneus</option>
       </select>
 
-      <label class="cb-label" style="margin-top:14px;">Observações</label>
-      <textarea id="sin-modal-obs" class="cb-input" rows="3" placeholder="Anotações sobre este sinistro..."></textarea>
+      <label class="cb-label" style="margin-top:14px;">Status</label>
+      <div id="sin-modal-status-lista" class="sin-status-lista"></div>
+      <textarea id="sin-modal-status-texto" class="cb-input" rows="3" placeholder="Escreva uma atualização sobre o andamento..."></textarea>
       <div class="cb-obs-actions">
-        <button class="btn small" id="sin-modal-obs-salvar">Salvar observações</button>
-        <span class="cb-obs-status" id="sin-modal-obs-status"></span>
+        <button class="btn small" id="sin-modal-status-salvar">Adicionar atualização</button>
+        <span class="cb-obs-status" id="sin-modal-status-feedback"></span>
       </div>
     </div>
   </div>
@@ -509,6 +510,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

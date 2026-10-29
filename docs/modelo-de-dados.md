@@ -220,13 +220,30 @@ que tira da fila ativa mas mantém o registro para consulta histórica.
 | numero        | text      | número do sinistro |
 | tipo          | text      | Sinistro / Vidros, faróis, lanternas e retrovisores / Pequenos reparos / Proteção de rodas e pneus |
 | seguradora    | text      | mesma lista de seguradoras de Cobrança |
-| observacoes   | text      | anotações livres |
+| observacoes   | text      | não usado mais na tela — substituído pelo histórico de Status (Sinistro de atualização) |
 | finalizado    | boolean   | |
 | arquivado     | boolean   | |
 | arquivado_em  | timestamp | |
 | criado_em     | timestamp | |
 
 Mesma regra de acesso de Cobrança: qualquer usuário autenticado.
+
+### Sinistro de atualização (Status)
+Histórico de atualizações sobre o andamento de um sinistro — cada
+atualização é um registro novo (nunca sobrescreve a anterior), com
+autor e data/hora de quando foi escrita. É o que aparece como "Status"
+ao abrir um sinistro, e a mais recente aparece resumida no painel
+principal da fila.
+
+| Campo        | Tipo      | Observação |
+|--------------|-----------|------------|
+| id           | uuid      | chave primária |
+| sinistro_id  | uuid (FK) | → Sinistro |
+| autor_id     | uuid (FK) | → Perfil, quem escreveu |
+| texto        | text      | |
+| criado_em    | timestamp | data/hora exibida junto do texto |
+
+Mesma regra de acesso de Sinistro: qualquer usuário autenticado.
 
 ## Relacionamentos
 
@@ -238,6 +255,8 @@ Negócio 1 ── N Cotação                (negocio_id)
 Processo 1 ── N Processo              (parent_id, subpáginas)
 Negócio 1 ── N Atividade              (negocio_id)
 Perfil 1 ── N Atividade               (autor_id)
+Sinistro 1 ── N Sinistro de atualização (sinistro_id)
+Perfil 1 ── N Sinistro de atualização   (autor_id)
 ```
 
 Perfil, Vendedor, Cliente de cobrança e Negócio não se relacionam entre si

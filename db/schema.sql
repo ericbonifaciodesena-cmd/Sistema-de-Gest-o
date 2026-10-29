@@ -242,3 +242,21 @@ alter table sinistros enable row level security;
 
 create policy "equipe interna acessa sinistros" on sinistros
     for all using (auth.uid() is not null) with check (auth.uid() is not null);
+
+-- Status do sinistro: histórico (nunca sobrescreve) de atualizações sobre o
+-- andamento do processo, cada uma com autor e data/hora de quando foi
+-- escrita. Substitui o campo único `observacoes` na tela.
+create table sinistro_atualizacoes (
+    id           uuid primary key default gen_random_uuid(),
+    sinistro_id  uuid not null references sinistros(id) on delete cascade,
+    autor_id     uuid references perfis(id),
+    texto        text not null,
+    criado_em    timestamptz not null default now()
+);
+
+create index idx_sinistro_atualizacoes_sinistro on sinistro_atualizacoes(sinistro_id);
+
+alter table sinistro_atualizacoes enable row level security;
+
+create policy "equipe interna acessa sinistro_atualizacoes" on sinistro_atualizacoes
+    for all using (auth.uid() is not null) with check (auth.uid() is not null);

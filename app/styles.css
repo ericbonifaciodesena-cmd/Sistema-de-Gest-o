@@ -211,6 +211,14 @@ table.commissions td.val { text-align: right; }
 .sin-tipo-chip.sin-tipo-vidros { background: var(--accent-weak); color: var(--accent); }
 .sin-tipo-chip.sin-tipo-reparos { background: var(--warn-weak); color: var(--warn); }
 .sin-tipo-chip.sin-tipo-rodas { background: var(--good-weak); color: var(--good); }
+
+.sin-ultima-atualizacao { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.sin-status-lista { display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; margin-bottom: 10px; }
+.sin-status-item { border-left: 2px solid var(--border); padding-left: 10px; }
+.sin-status-meta { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.sin-status-texto { font-size: 13px; color: var(--ink); white-space: pre-wrap; }
+
 table.history { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 table.history th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 table.history td { padding: 9px 16px; border-bottom: 1px solid var(--border); }
