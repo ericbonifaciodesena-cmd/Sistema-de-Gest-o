@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sistema de Gestão</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="styles.css?v=16">
+  <link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 
@@ -140,6 +140,12 @@
           <option>Eric</option>
           <option>Sena</option>
         </select>
+        <select id="cb-filter-forma" class="cb-input cb-filter">
+          <option value="">Todas as formas</option>
+          <option>Boleto seguradora</option>
+          <option>Boleto corretora</option>
+          <option>Pix</option>
+        </select>
       </div>
 
       <div class="cb-new-wrap">
@@ -147,7 +153,8 @@
         <div class="cb-new-form" id="cb-new-form" hidden>
           <input id="cb-nome" class="cb-input" placeholder="Nome do cliente">
           <div class="cb-forma-row">
-            <button type="button" class="chip cb-forma-chip is-on" data-forma="Boleto">Boleto</button>
+            <button type="button" class="chip cb-forma-chip is-on" data-forma="Boleto seguradora">Boleto seguradora</button>
+            <button type="button" class="chip cb-forma-chip" data-forma="Boleto corretora">Boleto corretora</button>
             <button type="button" class="chip cb-forma-chip" data-forma="Pix">Pix</button>
           </div>
           <label class="cb-label">Valor da parcela</label>
@@ -363,6 +370,13 @@
       </div>
       <div id="cb-modal-parcelas"></div>
 
+      <label class="cb-label" style="margin-top:14px;">Forma de pagamento</label>
+      <select id="cb-modal-forma-select" class="cb-input">
+        <option>Boleto seguradora</option>
+        <option>Boleto corretora</option>
+        <option>Pix</option>
+      </select>
+
       <div class="crm-field-row" style="margin-top:14px;">
         <div>
           <label class="cb-label">Seguradora</label>
@@ -510,6 +524,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=16"></script>
+  <script src="app.js?v=17"></script>
 </body>
 </html>

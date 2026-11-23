@@ -101,7 +101,7 @@ dessa área — não é o mesmo cadastro de Vendedor nem depende do CRM.
 |-------------|------|------------|
 | id          | uuid | chave primária |
 | nome        | text | |
-| forma       | text | `Boleto` \| `Pix` |
+| forma       | text | `Boleto seguradora` \| `Boleto corretora` \| `Pix` — editável a qualquer momento |
 | observacoes | text | texto livre, editável a qualquer momento |
 | seguradora  | text | opcional — Porto, Yelum, Tokio, Allianz, HDI, Zurich, Bradesco, Mapfre, Suhai ou Allseg |
 | cpf         | text | opcional |

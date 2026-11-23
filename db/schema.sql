@@ -82,7 +82,7 @@ create index idx_tarefas_data on tarefas(data);
 create table cobranca_clientes (
     id            uuid primary key default gen_random_uuid(),
     nome          text not null,
-    forma         text not null default 'Boleto' check (forma in ('Boleto', 'Pix')),
+    forma         text not null default 'Boleto seguradora' check (forma in ('Boleto seguradora', 'Boleto corretora', 'Pix')),
     observacoes   text not null default '',
     seguradora    text check (seguradora in ('Porto', 'Yelum', 'Tokio', 'Allianz', 'HDI', 'Zurich', 'Bradesco', 'Mapfre', 'Suhai', 'Allseg')),
     cpf           text,

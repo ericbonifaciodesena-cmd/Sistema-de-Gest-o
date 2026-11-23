@@ -20,7 +20,7 @@
   };
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null, vendorInfoId: null,
-    cobrancaClientes: [], parcelas: [], cbForma: "Boleto", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "",
+    cobrancaClientes: [], parcelas: [], cbForma: "Boleto seguradora", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "", cbFilterForma: "",
     novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
     processos: [], processosExpandidos: {},
@@ -1190,6 +1190,7 @@
       if (termo && f.cliente.nome.toLowerCase().indexOf(termo) === -1) return false;
       if (state.cbFilterSeguradora && f.cliente.seguradora !== state.cbFilterSeguradora) return false;
       if (state.cbFilterCorretor && f.cliente.corretor !== state.cbFilterCorretor) return false;
+      if (state.cbFilterForma && f.cliente.forma !== state.cbFilterForma) return false;
       return true;
     });
 
@@ -1214,7 +1215,7 @@
     if (!grupos.length) {
       var empty = document.createElement("div");
       empty.className = "cb-empty";
-      var temFiltro = termo || state.cbFilterSeguradora || state.cbFilterCorretor;
+      var temFiltro = termo || state.cbFilterSeguradora || state.cbFilterCorretor || state.cbFilterForma;
       empty.textContent = temFiltro ? "Nenhum cliente encontrado para os filtros aplicados." : "Nenhuma cobrança pendente.";
       cbFila.appendChild(empty);
       return;
@@ -1333,6 +1334,10 @@
     state.cbFilterCorretor = ev.target.value;
     renderCobrancas();
   });
+  document.getElementById("cb-filter-forma").addEventListener("change", function (ev) {
+    state.cbFilterForma = ev.target.value;
+    renderCobrancas();
+  });
 
   cbAddToggle.addEventListener("click", function () {
     cbNewForm.hidden = !cbNewForm.hidden;
@@ -1435,9 +1440,11 @@
     state.cbSearchTerm = "";
     state.cbFilterSeguradora = "";
     state.cbFilterCorretor = "";
+    state.cbFilterForma = "";
     document.getElementById("cb-search").value = "";
     document.getElementById("cb-filter-seguradora").value = "";
     document.getElementById("cb-filter-corretor").value = "";
+    document.getElementById("cb-filter-forma").value = "";
 
     var atualizou = await loadAll();
     if (!atualizou) {
@@ -1501,12 +1508,14 @@
   var cbModalSeguradora = cbBindClienteField("cb-modal-seguradora", "seguradora", "change");
   var cbModalCpf = cbBindClienteField("cb-modal-cpf", "cpf", "blur");
   var cbModalCorretor = cbBindClienteField("cb-modal-corretor", "corretor", "change");
+  var cbModalForma = cbBindClienteField("cb-modal-forma-select", "forma", "change");
 
   function renderCbModal() {
     var cliente = state.cobrancaClientes.find(function (c) { return c.id === state.cbModalClienteId; });
     if (!cliente) return;
     document.getElementById("cb-modal-nome").textContent = cliente.nome;
     document.getElementById("cb-modal-forma").textContent = cliente.forma;
+    cbModalForma.value = cliente.forma;
     if (document.activeElement !== cbModalObs) cbModalObs.value = cliente.observacoes || "";
     cbModalSeguradora.value = cliente.seguradora || "";
     if (document.activeElement !== cbModalCpf) cbModalCpf.value = cliente.cpf || "";
