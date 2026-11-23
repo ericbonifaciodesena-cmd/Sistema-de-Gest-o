@@ -1514,7 +1514,6 @@
     var cliente = state.cobrancaClientes.find(function (c) { return c.id === state.cbModalClienteId; });
     if (!cliente) return;
     document.getElementById("cb-modal-nome").textContent = cliente.nome;
-    document.getElementById("cb-modal-forma").textContent = cliente.forma;
     cbModalForma.value = cliente.forma;
     if (document.activeElement !== cbModalObs) cbModalObs.value = cliente.observacoes || "";
     cbModalSeguradora.value = cliente.seguradora || "";

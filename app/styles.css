@@ -412,6 +412,10 @@ textarea.cb-input { resize: vertical; font-family: inherit; }
 }
 .cb-modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .cb-modal-head h2 { margin: 0; font-size: 18px; }
+.cb-forma-select-inline {
+  margin-top: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+  font-family: inherit; font-size: 12px; color: var(--muted); padding: 3px 10px; cursor: pointer;
+}
 .comissao-card-preview { margin: 6px 0 0; }
 .comissao-card-table {
   width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 10px;
