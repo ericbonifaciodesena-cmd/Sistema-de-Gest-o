@@ -260,3 +260,72 @@ alter table sinistro_atualizacoes enable row level security;
 
 create policy "equipe interna acessa sinistro_atualizacoes" on sinistro_atualizacoes
     for all using (auth.uid() is not null) with check (auth.uid() is not null);
+
+-- Log de exclusão de Cobrança: guarda uma cópia (jsonb, foto de todas as
+-- colunas no momento) de todo cliente/parcela apagado, pra dar pra ver
+-- "quem sumiu e quando" sem precisar de SQL direto no banco — e pra ter
+-- como recuperar manualmente se alguém excluir sem querer. É só leitura
+-- pra equipe; a gravação é feita pela trigger (roda com privilégio de
+-- dono da função, não do usuário, então nem dá pra forjar/editar via API).
+create table cobranca_clientes_excluidos (
+    id           uuid primary key default gen_random_uuid(),
+    cliente_id   uuid not null,
+    dados        jsonb not null,
+    excluido_em  timestamptz not null default now(),
+    excluido_por uuid references perfis(id)
+);
+
+create table parcelas_excluidas (
+    id           uuid primary key default gen_random_uuid(),
+    parcela_id   uuid not null,
+    cliente_id   uuid,
+    dados        jsonb not null,
+    excluido_em  timestamptz not null default now(),
+    excluido_por uuid references perfis(id)
+);
+
+create index idx_cobranca_clientes_excluidos_cliente on cobranca_clientes_excluidos(cliente_id);
+create index idx_parcelas_excluidas_cliente on parcelas_excluidas(cliente_id);
+
+create or replace function public.log_exclusao_cobranca_cliente()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into cobranca_clientes_excluidos (cliente_id, dados, excluido_por)
+  values (old.id, to_jsonb(old), auth.uid());
+  return old;
+end;
+$$;
+
+create trigger trg_log_exclusao_cobranca_cliente
+before delete on cobranca_clientes
+for each row execute function public.log_exclusao_cobranca_cliente();
+
+create or replace function public.log_exclusao_parcela()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into parcelas_excluidas (parcela_id, cliente_id, dados, excluido_por)
+  values (old.id, old.cliente_id, to_jsonb(old), auth.uid());
+  return old;
+end;
+$$;
+
+create trigger trg_log_exclusao_parcela
+before delete on parcelas
+for each row execute function public.log_exclusao_parcela();
+
+alter table cobranca_clientes_excluidos enable row level security;
+alter table parcelas_excluidas enable row level security;
+
+create policy "equipe interna le exclusoes de cobranca_clientes" on cobranca_clientes_excluidos
+    for select using (auth.uid() is not null);
+
+create policy "equipe interna le exclusoes de parcelas" on parcelas_excluidas
+    for select using (auth.uid() is not null);

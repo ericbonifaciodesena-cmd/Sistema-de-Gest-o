@@ -200,6 +200,9 @@ table.commissions td.val { text-align: right; }
 #sin-lista { display: flex; flex-direction: column; gap: 8px; }
 .sin-historico { display: none; }
 .sin-historico.active { display: block; }
+
+.cb-excluidos { display: none; }
+.cb-excluidos.active { display: block; }
 #sin-history-btn { margin-left: 10px; }
 
 .sin-card { border: 1px solid var(--border); box-shadow: var(--shadow); }

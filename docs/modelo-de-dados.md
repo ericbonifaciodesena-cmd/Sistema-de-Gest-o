@@ -245,6 +245,24 @@ principal da fila.
 
 Mesma regra de acesso de Sinistro: qualquer usuário autenticado.
 
+### Cobrança excluído / Parcela excluída (log de auditoria)
+Toda exclusão de cliente de cobrança ou parcela é automaticamente copiada
+pra essas tabelas por uma trigger (`dados` guarda uma foto em jsonb da
+linha inteira no momento em que foi apagada) — assim dá pra ver "quem
+sumiu e quando" direto na aba Cobranças ("Ver excluídos"), sem precisar
+rodar SQL, e dá pra recuperar manualmente se alguém excluir sem querer.
+É só leitura pela API; só a trigger grava (roda como dona da função).
+
+| Campo        | Tipo      | Observação |
+|--------------|-----------|------------|
+| id           | uuid      | chave primária do log |
+| cliente_id / parcela_id | uuid | id original (a linha não existe mais na tabela de origem) |
+| dados        | jsonb     | todas as colunas da linha excluída |
+| excluido_em  | timestamp | |
+| excluido_por | uuid (FK) | → Perfil, quem executou o delete |
+
+Mesma regra de acesso de Cobrança: qualquer usuário autenticado (só leitura).
+
 ## Relacionamentos
 
 ```

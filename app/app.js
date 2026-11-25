@@ -20,7 +20,7 @@
   };
   var state = {
     session: null, perfil: null, vendedores: [], comissoes: [], tarefas: [], vendorAberto: null, vendorInfoId: null,
-    cobrancaClientes: [], parcelas: [], cbForma: "Boleto seguradora", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "", cbFilterForma: "",
+    cobrancaClientes: [], parcelas: [], cbClientesExcluidos: [], cbParcelasExcluidas: [], cbForma: "Boleto seguradora", cbModalClienteId: null, cbEditingParcelaId: null, cbSearchTerm: "", cbFilterSeguradora: "", cbFilterCorretor: "", cbFilterForma: "",
     novaTarefaDrafts: {}, comissaoCardId: null, tarefaEditandoId: null,
     negocios: [], cotacoes: [], atividades: [], crmTipo: "novo", crmModalNegocioId: null,
     processos: [], processosExpandidos: {},
@@ -273,7 +273,7 @@
   }
 
   async function loadAllOnce() {
-    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes, prRes, siRes, saRes] = await Promise.all([
+    var [vRes, cRes, tRes, ccRes, pRes, nRes, qRes, aRes, prRes, siRes, saRes, cceRes, peRes] = await Promise.all([
       fetchAllRows("vendedores", "*"),
       fetchAllRows("comissoes", "*"),
       fetchAllRows("tarefas", "*, perfis(nome)"),
@@ -284,9 +284,11 @@
       fetchAllRows("atividades", "*, perfis(nome)"),
       fetchAllRows("processos", "*"),
       fetchAllRows("sinistros", "*"),
-      fetchAllRows("sinistro_atualizacoes", "*, perfis(nome)")
+      fetchAllRows("sinistro_atualizacoes", "*, perfis(nome)"),
+      fetchAllRows("cobranca_clientes_excluidos", "*, perfis(nome)"),
+      fetchAllRows("parcelas_excluidas", "*")
     ]);
-    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error || prRes.error || siRes.error || saRes.error;
+    var erro = vRes.error || cRes.error || tRes.error || ccRes.error || pRes.error || nRes.error || qRes.error || aRes.error || prRes.error || siRes.error || saRes.error || cceRes.error || peRes.error;
     if (erro) return erro;
     state.vendedores = vRes.data;
     state.comissoes = cRes.data;
@@ -299,6 +301,8 @@
     state.processos = prRes.data;
     state.sinistros = siRes.data;
     state.sinistroAtualizacoes = saRes.data;
+    state.cbClientesExcluidos = cceRes.data;
+    state.cbParcelasExcluidas = peRes.data;
     renderAll();
     return null;
   }
@@ -330,6 +334,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "processos" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "sinistros" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "sinistro_atualizacoes" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cobranca_clientes_excluidos" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "parcelas_excluidas" }, loadAll)
       .subscribe();
   }
   function teardownSubscriptions() {
@@ -1162,6 +1168,52 @@
   var cbAddToggle = document.getElementById("cb-abrir-form");
   var cbNewForm = document.getElementById("cb-new-form");
   var cbModalOverlay = document.getElementById("cb-modal-overlay");
+  var cbExcluidosWrap = document.getElementById("cb-excluidos");
+  var cbExcluidosBtn = document.getElementById("cb-excluidos-btn");
+  var cbShowingExcluidos = false;
+
+  cbExcluidosBtn.addEventListener("click", function () {
+    cbShowingExcluidos = !cbShowingExcluidos;
+    cbExcluidosWrap.classList.toggle("active", cbShowingExcluidos);
+    cbFila.style.display = cbShowingExcluidos ? "none" : "";
+    cbExcluidosBtn.textContent = cbShowingExcluidos ? "Ver fila ativa" : "Ver excluídos";
+    if (cbShowingExcluidos) renderCbExcluidos();
+  });
+
+  function renderCbExcluidos() {
+    var body = document.getElementById("cb-excluidos-body");
+    body.innerHTML = "";
+    var lista = state.cbClientesExcluidos
+      .slice()
+      .sort(function (a, b) { return (b.excluido_em || "").localeCompare(a.excluido_em || ""); });
+    if (!lista.length) {
+      var tr = document.createElement("tr");
+      tr.className = "empty-row";
+      tr.innerHTML = "<td colspan=\"7\">Nenhuma exclusão registrada ainda.</td>";
+      body.appendChild(tr);
+      return;
+    }
+    lista.forEach(function (log) {
+      var d = log.dados || {};
+      var numParcelas = state.cbParcelasExcluidas.filter(function (p) { return p.cliente_id === log.cliente_id; }).length;
+      var tr = document.createElement("tr");
+      var tds = [
+        d.nome || "—",
+        d.forma || "—",
+        d.seguradora || "—",
+        d.corretor || "—",
+        String(numParcelas),
+        fmtDateHora(log.excluido_em),
+        log.perfis ? log.perfis.nome : "—"
+      ];
+      tds.forEach(function (txt) {
+        var td = document.createElement("td");
+        td.textContent = txt;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
 
   function clienteParcelas(clienteId) {
     return state.parcelas
@@ -2371,6 +2423,7 @@
     if (showingHistory) renderHistory();
     renderCobrancas();
     if (state.cbModalClienteId) renderCbModal();
+    if (cbShowingExcluidos) renderCbExcluidos();
     renderSinistros();
     if (state.sinModalId) renderSinModal();
     renderCrm();
